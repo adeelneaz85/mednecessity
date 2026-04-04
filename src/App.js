@@ -1,5 +1,97 @@
 import { useState, useCallback, useRef } from "react";
 
+// ─── USERS (add/remove users here) ───────────────────────────────────────────
+const USERS = [
+  { username: "adeel",    password: "WellnessTech2024!",  role: "Admin",    name: "Adeel Niaz"       },
+  { username: "backoffice", password: "MedNec2024!",      role: "Staff",    name: "Back Office Staff" },
+  { username: "manager",  password: "Manager2024!",       role: "Manager",  name: "Practice Manager"  },
+];
+
+// ─── Login Screen ─────────────────────────────────────────────────────────────
+function LoginScreen({ onLogin }) {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [error,    setError]    = useState("");
+  const [loading,  setLoading]  = useState(false);
+  const [showPw,   setShowPw]   = useState(false);
+
+  const handleLogin = async () => {
+    if (!username || !password) { setError("Please enter username and password."); return; }
+    setLoading(true); setError("");
+    await new Promise(r => setTimeout(r, 800));
+    const user = USERS.find(u => u.username.toLowerCase() === username.toLowerCase() && u.password === password);
+    if (user) { onLogin(user); }
+    else { setError("Invalid username or password. Please try again."); setLoading(false); }
+  };
+
+  return (
+    <div style={LS.root}>
+      <div style={LS.card}>
+        <div style={LS.logoRow}>
+          <span style={LS.logoIcon}>⚕</span>
+          <div>
+            <div style={LS.logoTitle}>MedNecessity AI</div>
+            <div style={LS.logoSub}>ANS · ABI · ICD-10 · CPT Engine</div>
+          </div>
+        </div>
+        <div style={LS.tagline}>Secure Clinical Access Portal</div>
+
+        <div style={LS.form}>
+          <div style={LS.fg}>
+            <label style={LS.lbl}>Username</label>
+            <input style={LS.inp} value={username} onChange={e=>setUsername(e.target.value)}
+              placeholder="Enter your username" autoComplete="username"
+              onKeyDown={e=>e.key==="Enter"&&handleLogin()} />
+          </div>
+          <div style={LS.fg}>
+            <label style={LS.lbl}>Password</label>
+            <div style={{position:"relative"}}>
+              <input style={{...LS.inp,paddingRight:40}} type={showPw?"text":"password"}
+                value={password} onChange={e=>setPassword(e.target.value)}
+                placeholder="Enter your password" autoComplete="current-password"
+                onKeyDown={e=>e.key==="Enter"&&handleLogin()} />
+              <button style={LS.eyeBtn} onClick={()=>setShowPw(!showPw)}>{showPw?"🙈":"👁"}</button>
+            </div>
+          </div>
+          {error && <div style={LS.error}>⚠ {error}</div>}
+          <button style={LS.btn} onClick={handleLogin} disabled={loading}>
+            {loading ? <><span style={{animation:"spin 1s linear infinite",display:"inline-block"}}>◌</span> Signing in…</> : "Sign In →"}
+          </button>
+        </div>
+
+        <div style={LS.footer}>
+          🔒 HIPAA-Compliant Access · Powered by Wellness Tech
+        </div>
+      </div>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap');
+        *{box-sizing:border-box;margin:0;padding:0}
+        body{background:#080c14;font-family:'DM Sans',sans-serif}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+      `}</style>
+    </div>
+  );
+}
+
+const LS = {
+  root:     {minHeight:"100vh",background:"#080c14",display:"flex",alignItems:"center",justifyContent:"center",padding:20},
+  card:     {background:"#0d1220",border:"1px solid #1e2840",borderRadius:18,padding:"40px 36px",width:"100%",maxWidth:420,animation:"fadeUp .5s ease"},
+  logoRow:  {display:"flex",alignItems:"center",gap:14,marginBottom:24},
+  logoIcon: {fontSize:40,background:"linear-gradient(135deg,#7c5cfc,#0ea5e9)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"},
+  logoTitle:{fontSize:22,fontWeight:700,color:"#f0f4ff",letterSpacing:"-.3px"},
+  logoSub:  {fontSize:11,color:"#4a5880",textTransform:"uppercase",letterSpacing:".6px",marginTop:2},
+  tagline:  {fontSize:13,color:"#5a6880",marginBottom:28,paddingBottom:28,borderBottom:"1px solid #1e2840"},
+  form:     {display:"flex",flexDirection:"column",gap:16},
+  fg:       {display:"flex",flexDirection:"column",gap:6},
+  lbl:      {fontSize:11,color:"#8899bb",textTransform:"uppercase",letterSpacing:".6px",fontWeight:600},
+  inp:      {background:"#111827",border:"1px solid #1e2840",borderRadius:9,padding:"11px 14px",color:"#e2e8f8",fontSize:14,outline:"none",fontFamily:"inherit",width:"100%"},
+  eyeBtn:   {position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",fontSize:16,padding:4},
+  error:    {background:"#ff6b6b18",border:"1px solid #ff6b6b44",borderRadius:8,padding:"10px 14px",fontSize:13,color:"#ff9a9a"},
+  btn:      {padding:"13px",background:"linear-gradient(135deg,#7c5cfc,#0ea5e9)",border:"none",borderRadius:10,color:"#fff",fontWeight:700,fontSize:15,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginTop:4},
+  footer:   {marginTop:28,paddingTop:20,borderTop:"1px solid #1e2840",fontSize:11,color:"#4a5880",textAlign:"center"},
+};
+
 // ─── ICD / CPT Knowledge Base ────────────────────────────────────────────────
 const ANS_ICD_CODES = [
   { code: "G90.3",  description: "Multi-System Autonomic Failure" },
@@ -75,14 +167,12 @@ const ABI_KEYWORDS = [
   "abi","vascular insufficiency","i73","i70","e11.5","e10.5",
 ];
 
-// ─── CCD/CCDA XML Parser (Epic + eCW) ────────────────────────────────────────
 function parseCCDA(xmlString) {
   try {
     const parser = new DOMParser();
     const doc = parser.parseFromString(xmlString, "application/xml");
     if (doc.querySelector("parsererror")) return null;
     const getText = (el, sel) => { const n = el.querySelector(sel); return n ? n.textContent.trim() : ""; };
-
     const patient = doc.querySelector("patient");
     let patientName = "", patientDOB = "", mrn = "", gender = "";
     if (patient) {
@@ -94,18 +184,15 @@ function parseCCDA(xmlString) {
     }
     const idEl = doc.querySelector("patientRole id");
     if (idEl) mrn = idEl.getAttribute("extension") || idEl.getAttribute("root") || "";
-
     let provider = "";
     const author = doc.querySelector("author assignedAuthor");
     if (author) {
       const ag = getText(author, "given"), af = getText(author, "family");
       provider = [ag, af].filter(Boolean).join(" ") || getText(author, "representedOrganization name");
     }
-
     let visitDate = "";
     const et = doc.querySelector("ClinicalDocument > effectiveTime");
     if (et) { const v = et.getAttribute("value") || ""; if (v.length >= 8) visitDate = `${v.slice(4,6)}/${v.slice(6,8)}/${v.slice(0,4)}`; }
-
     const problems = [];
     doc.querySelectorAll("observation").forEach(obs => {
       const v = obs.querySelector("value"), t = obs.querySelector("text");
@@ -117,13 +204,11 @@ function parseCCDA(xmlString) {
           problems.push({ code, display });
       }
     });
-
     const medications = [];
     doc.querySelectorAll("substanceAdministration").forEach(m => {
       const name = getText(m, "originalText") || getText(m, "name");
       if (name) medications.push(name);
     });
-
     const vitals = {};
     doc.querySelectorAll("observation").forEach(obs => {
       const c = obs.querySelector("code"), v = obs.querySelector("value");
@@ -137,20 +222,12 @@ function parseCCDA(xmlString) {
       if (loinc === "8867-4" || disp.includes("heart rate")) vitals.heartRate   = `${val} ${unit}`.trim();
       if (loinc === "59408-5"|| disp.includes("oxygen"))     vitals.o2sat       = `${val}${unit}`.trim();
     });
-
     const narrativeText = [];
     doc.querySelectorAll("section text, section title").forEach(t => narrativeText.push(t.textContent));
-
-    const allText = [patientName, gender,
-      problems.map(p => `${p.code} ${p.display}`).join(" "),
-      medications.join(" "), narrativeText.join(" ")].join(" ");
-
-    return { patientName, patientDOB, gender, mrn, provider, visitDate,
-             problems, medications, allergies: [], vitals, allText, source: "CCD/CCDA (Epic/eCW)" };
+    const allText = [patientName, gender, problems.map(p => `${p.code} ${p.display}`).join(" "), medications.join(" "), narrativeText.join(" ")].join(" ");
+    return { patientName, patientDOB, gender, mrn, provider, visitDate, problems, medications, allergies: [], vitals, allText, source: "CCD/CCDA (Epic/eCW)" };
   } catch { return null; }
 }
-
-// ─── HL7 v2 Parser (eCW) ─────────────────────────────────────────────────────
 function parseHL7(raw) {
   try {
     const lines = raw.split(/\r?\n/).filter(Boolean);
@@ -160,7 +237,6 @@ function parseHL7(raw) {
     const comp  = (str, n)  => (str.split("^")[n]  || "").trim();
     const pid = seg("PID"), pv1 = seg("PV1");
     const dg1 = lines.filter(l => l.startsWith("DG1|"));
-
     const nf = field(pid, 5);
     const patientName = [comp(nf,0), comp(nf,1)].filter(Boolean).join(", ");
     const dobRaw = field(pid, 7);
@@ -172,22 +248,15 @@ function parseHL7(raw) {
     const provider = [comp(pvDoc,2), comp(pvDoc,1)].filter(Boolean).join(" ");
     const problems = dg1.map(l => ({ code: comp(field(l,3),0), display: comp(field(l,3),1)||field(l,4) })).filter(p=>p.code);
     const allText = [patientName, problems.map(p=>`${p.code} ${p.display}`).join(" ")].join(" ");
-
-    return { patientName, patientDOB, gender:"", mrn, provider, visitDate,
-             problems, medications: [], allergies: [], vitals: {}, allText, source: "HL7 v2 (eCW)" };
+    return { patientName, patientDOB, gender:"", mrn, provider, visitDate, problems, medications: [], allergies: [], vitals: {}, allText, source: "HL7 v2 (eCW)" };
   } catch { return null; }
 }
-
-// ─── CSV Batch Parser (eCW / Epic Schedule) ───────────────────────────────────
 function parseCSVBatch(raw) {
   const lines = raw.trim().split(/\r?\n/);
   if (lines.length < 2) return null;
   const headers = lines[0].split(",").map(h => h.replace(/"/g,"").trim().toLowerCase());
   const col = (row, ...names) => {
-    for (const n of names) {
-      const i = headers.findIndex(h => h.includes(n));
-      if (i >= 0) return (row[i] || "").replace(/"/g,"").trim();
-    }
+    for (const n of names) { const i = headers.findIndex(h => h.includes(n)); if (i >= 0) return (row[i] || "").replace(/"/g,"").trim(); }
     return "";
   };
   const patients = [];
@@ -196,27 +265,13 @@ function parseCSVBatch(raw) {
     if (row.length < 2) continue;
     const last = col(row,"last","lname","surname"), first = col(row,"first","fname","given");
     const name = last && first ? `${last}, ${first}` : col(row,"patient name","patient","name");
-    patients.push({
-      patientName: name || `Patient ${i}`,
-      patientDOB:  col(row,"dob","birth","born"),
-      visitDate:   col(row,"visit","appt","appointment","date","scheduled"),
-      provider:    col(row,"provider","physician","doctor","npi"),
-      mrn:         col(row,"mrn","chart","id","account"),
-      gender:      col(row,"gender","sex"),
-      problems: [], medications: [], allergies: [], vitals: {},
-      allText: lines[i], source: "CSV Batch",
-    });
+    patients.push({ patientName: name || `Patient ${i}`, patientDOB: col(row,"dob","birth","born"), visitDate: col(row,"visit","appt","appointment","date","scheduled"), provider: col(row,"provider","physician","doctor","npi"), mrn: col(row,"mrn","chart","id","account"), gender: col(row,"gender","sex"), problems: [], medications: [], allergies: [], vitals: {}, allText: lines[i], source: "CSV Batch" });
   }
   return patients.length ? patients : null;
 }
-
-// ─── Eligibility Engine ───────────────────────────────────────────────────────
 function detectEligibility(text) {
   const lower = text.toLowerCase();
-  return {
-    ansKeywords: ANS_KEYWORDS.filter(kw => lower.includes(kw)),
-    abiKeywords: ABI_KEYWORDS.filter(kw => lower.includes(kw)),
-  };
+  return { ansKeywords: ANS_KEYWORDS.filter(kw => lower.includes(kw)), abiKeywords: ABI_KEYWORDS.filter(kw => lower.includes(kw)) };
 }
 function confidence(keywords) {
   if (keywords.length >= 5) return { level:"HIGH",     pct:92, color:"#00d26a" };
@@ -227,97 +282,43 @@ function confidence(keywords) {
 function matchICD(problems, text, type) {
   const lower = text.toLowerCase();
   const pool  = type === "ANS" ? ANS_ICD_CODES : ABI_ICD_CODES;
-  const fromDoc = (problems||[]).filter(p => pool.some(c => c.code.startsWith(p.code.split(".")[0])))
-    .map(p => ({ code:p.code, description:p.display||pool.find(c=>c.code===p.code)?.description||p.code }));
-  const fromKW  = pool.filter(c =>
-    lower.includes(c.code.toLowerCase()) ||
-    c.description.toLowerCase().split(" ").some(w => w.length > 3 && lower.includes(w))
-  );
+  const fromDoc = (problems||[]).filter(p => pool.some(c => c.code.startsWith(p.code.split(".")[0]))).map(p => ({ code:p.code, description:p.display||pool.find(c=>c.code===p.code)?.description||p.code }));
+  const fromKW  = pool.filter(c => lower.includes(c.code.toLowerCase()) || c.description.toLowerCase().split(" ").some(w => w.length > 3 && lower.includes(w)));
   return [...new Map([...fromDoc,...fromKW].map(c=>[c.code,c])).values()].slice(0,6);
 }
 function buildResult(parsed) {
   const { ansKeywords, abiKeywords } = detectEligibility(parsed.allText || "");
   const ansConf = confidence(ansKeywords), abiConf = confidence(abiKeywords);
-  return {
-    ...parsed,
-    ansEligible: ansConf.level !== "NONE",
-    abiEligible: abiConf.level !== "NONE",
-    ansConf, abiConf, ansKeywords, abiKeywords,
-    ansICD: matchICD(parsed.problems, parsed.allText, "ANS").slice(0,6),
-    abiICD: matchICD(parsed.problems, parsed.allText, "ABI").slice(0,6),
-    ansCPT: ANS_CPT_CODES.slice(0, ansConf.level==="HIGH" ? 5 : 3),
-    abiCPT: ABI_CPT_CODES.slice(0, abiConf.level==="HIGH" ? 5 : 3),
-    timestamp: new Date().toISOString(),
-  };
+  return { ...parsed, ansEligible: ansConf.level !== "NONE", abiEligible: abiConf.level !== "NONE", ansConf, abiConf, ansKeywords, abiKeywords, ansICD: matchICD(parsed.problems, parsed.allText, "ANS").slice(0,6), abiICD: matchICD(parsed.problems, parsed.allText, "ABI").slice(0,6), ansCPT: ANS_CPT_CODES.slice(0, ansConf.level==="HIGH" ? 5 : 3), abiCPT: ABI_CPT_CODES.slice(0, abiConf.level==="HIGH" ? 5 : 3), timestamp: new Date().toISOString() };
 }
-
-// ─── AI Medical Necessity ──────────────────────────────────────────────────────
 async function getAIInsight(rec) {
   try {
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
-      method:"POST", headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({
-        model:"claude-sonnet-4-20250514", max_tokens:1000,
-        system:`You are a medical billing and clinical documentation specialist focused on ANS (Autonomic Nervous System) testing and ABI (Ankle-Brachial Index) studies. Provide concise medical necessity justification referencing ICD-10 and CPT codes. Format: 1) Clinical Findings Summary 2) ANS Medical Necessity (if applicable) 3) ABI Medical Necessity (if applicable) 4) Billing & Documentation Tips. Under 300 words.`,
-        messages:[{ role:"user", content:
-          `Patient: ${rec.patientName}, DOB: ${rec.patientDOB}, Visit: ${rec.visitDate}, Provider: ${rec.provider}
-Source: ${rec.source||"Manual"}
-EMR Diagnoses: ${(rec.problems||[]).map(p=>`${p.code} ${p.display}`).join("; ")||"none"}
-Medications: ${(rec.medications||[]).slice(0,10).join(", ")||"none"}
-ANS indicators: ${rec.ansKeywords.join(", ")||"none"}
-ABI indicators: ${rec.abiKeywords.join(", ")||"none"}
-Matched ANS ICD: ${rec.ansICD.map(c=>c.code).join(", ")}
-Matched ABI ICD: ${rec.abiICD.map(c=>c.code).join(", ")}
-Provide medical necessity analysis.` }]
-      })
-    });
+    const res = await fetch("https://api.anthropic.com/v1/messages", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:1000, system:`You are a medical billing and clinical documentation specialist focused on ANS testing and ABI studies. Provide concise medical necessity justification referencing ICD-10 and CPT codes. Format: 1) Clinical Findings Summary 2) ANS Medical Necessity (if applicable) 3) ABI Medical Necessity (if applicable) 4) Billing & Documentation Tips. Under 300 words.`, messages:[{ role:"user", content:`Patient: ${rec.patientName}, DOB: ${rec.patientDOB}, Visit: ${rec.visitDate}, Provider: ${rec.provider}\nSource: ${rec.source||"Manual"}\nEMR Diagnoses: ${(rec.problems||[]).map(p=>`${p.code} ${p.display}`).join("; ")||"none"}\nMedications: ${(rec.medications||[]).slice(0,10).join(", ")||"none"}\nANS indicators: ${rec.ansKeywords.join(", ")||"none"}\nABI indicators: ${rec.abiKeywords.join(", ")||"none"}\nProvide medical necessity analysis.` }] }) });
     const data = await res.json();
     return data.content?.find(b=>b.type==="text")?.text || "AI insight unavailable.";
   } catch { return "AI insight unavailable — manual review recommended."; }
 }
-
-// ─── Export Helpers ────────────────────────────────────────────────────────────
+function dl(content, name, type) { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([content],{type})); a.download = name; a.click(); }
 function exportTXT(rec, aiInsight) {
-  const t = [
-    "MEDICAL NECESSITY REPORT","=".repeat(60),
-    `Patient : ${rec.patientName}`, `DOB     : ${rec.patientDOB}`,
-    `MRN     : ${rec.mrn||"N/A"}`, `Visit   : ${rec.visitDate}`,
-    `Provider: ${rec.provider}`,   `Source  : ${rec.source||"Manual"}`, "",
-    `ANS ELIGIBLE : ${rec.ansEligible?"YES ("+rec.ansConf.level+")":"NO"}`,
-    `ABI ELIGIBLE : ${rec.abiEligible?"YES ("+rec.abiConf.level+")":"NO"}`, "",
-    "EMR DIAGNOSES:", ...(rec.problems||[]).map(p=>`  ${p.code} — ${p.display}`), "",
-    "RECOMMENDED ICD-10 — ANS:", ...rec.ansICD.map(c=>`  ${c.code} — ${c.description}`), "",
-    "RECOMMENDED ICD-10 — ABI:", ...rec.abiICD.map(c=>`  ${c.code} — ${c.description}`), "",
-    "RECOMMENDED CPT — ANS:", ...rec.ansCPT.map(c=>`  ${c.code} — ${c.description}  [${c.reimbursement}]`), "",
-    "RECOMMENDED CPT — ABI:", ...rec.abiCPT.map(c=>`  ${c.code} — ${c.description}  [${c.reimbursement}]`), "",
-    "AI MEDICAL NECESSITY NOTE:", aiInsight, "",
-    `Generated: ${new Date().toLocaleString()} | MedNecessity AI`,
-  ].join("\n");
+  const t = ["MEDICAL NECESSITY REPORT","=".repeat(60),`Patient : ${rec.patientName}`,`DOB     : ${rec.patientDOB}`,`MRN     : ${rec.mrn||"N/A"}`,`Visit   : ${rec.visitDate}`,`Provider: ${rec.provider}`,`Source  : ${rec.source||"Manual"}`,"",`ANS ELIGIBLE : ${rec.ansEligible?"YES ("+rec.ansConf.level+")":"NO"}`,`ABI ELIGIBLE : ${rec.abiEligible?"YES ("+rec.abiConf.level+")":"NO"}`,"","EMR DIAGNOSES:", ...(rec.problems||[]).map(p=>`  ${p.code} — ${p.display}`),"","RECOMMENDED ICD-10 — ANS:", ...rec.ansICD.map(c=>`  ${c.code} — ${c.description}`),"","RECOMMENDED ICD-10 — ABI:", ...rec.abiICD.map(c=>`  ${c.code} — ${c.description}`),"","RECOMMENDED CPT — ANS:", ...rec.ansCPT.map(c=>`  ${c.code} — ${c.description}  [${c.reimbursement}]`),"","RECOMMENDED CPT — ABI:", ...rec.abiCPT.map(c=>`  ${c.code} — ${c.description}  [${c.reimbursement}]`),"","AI MEDICAL NECESSITY NOTE:", aiInsight,"",`Generated: ${new Date().toLocaleString()} | MedNecessity AI`].join("\n");
   dl(t, `MedNecessity_${rec.patientName.replace(/\s/g,"_")}.txt`, "text/plain");
 }
 function exportCSV(patients) {
   const hdr = ["Patient","DOB","MRN","Visit","Provider","Source","ANS Eligible","ANS Conf","ABI Eligible","ABI Conf","EMR ICD Codes","ANS ICD Codes","ABI ICD Codes","ANS CPT","ABI CPT"];
-  const rows = patients.map(r=>[
-    r.patientName,r.patientDOB,r.mrn||"",r.visitDate,r.provider,r.source||"",
-    r.ansEligible?"YES":"NO",r.ansConf.level,
-    r.abiEligible?"YES":"NO",r.abiConf.level,
-    (r.problems||[]).map(p=>p.code).join("|"),
-    r.ansICD.map(c=>c.code).join("|"), r.abiICD.map(c=>c.code).join("|"),
-    r.ansCPT.map(c=>c.code).join("|"), r.abiCPT.map(c=>c.code).join("|"),
-  ]);
-  dl([hdr,...rows].map(r=>r.map(v=>`"${v}"`).join(",")).join("\n"),
-    `MedNecessity_${new Date().toISOString().slice(0,10)}.csv`, "text/csv");
-}
-function dl(content, name, type) {
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(new Blob([content],{type}));
-  a.download = name; a.click();
+  const rows = patients.map(r=>[r.patientName,r.patientDOB,r.mrn||"",r.visitDate,r.provider,r.source||"",r.ansEligible?"YES":"NO",r.ansConf.level,r.abiEligible?"YES":"NO",r.abiConf.level,(r.problems||[]).map(p=>p.code).join("|"),r.ansICD.map(c=>c.code).join("|"),r.abiICD.map(c=>c.code).join("|"),r.ansCPT.map(c=>c.code).join("|"),r.abiCPT.map(c=>c.code).join("|")]);
+  dl([hdr,...rows].map(r=>r.map(v=>`"${v}"`).join(",")).join("\n"), `MedNecessity_${new Date().toISOString().slice(0,10)}.csv`, "text/csv");
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // MAIN APP
 // ═══════════════════════════════════════════════════════════════════════════════
 export default function App() {
+  const [user, setUser] = useState(null);
+  if (!user) return <LoginScreen onLogin={setUser} />;
+  return <MainApp user={user} onLogout={() => setUser(null)} />;
+}
+
+function MainApp({ user, onLogout }) {
   const [inputTab, setInputTab] = useState("emr");
   const [emrText,  setEmrText]  = useState("");
   const [patientName, setPatientName] = useState("");
@@ -336,8 +337,7 @@ export default function App() {
   const importRef = useRef();
 
   const analyze = useCallback(async (override) => {
-    const base = override || { patientName, patientDOB, visitDate, provider,
-      problems:[], medications:[], allergies:[], vitals:{}, allText:emrText, source:"Manual Entry", mrn:"" };
+    const base = override || { patientName, patientDOB, visitDate, provider, problems:[], medications:[], allergies:[], vitals:{}, allText:emrText, source:"Manual Entry", mrn:"" };
     if (!base.allText?.trim()) return;
     setIsAnalyzing(true); setResult(null); setAiInsight("");
     await new Promise(r=>setTimeout(r,900));
@@ -354,64 +354,31 @@ export default function App() {
     const reader = new FileReader();
     reader.onload = (ev) => {
       const raw = ev.target.result;
-      if (raw.trim().startsWith("<?xml") || raw.trim().startsWith("<ClinicalDocument") || raw.includes("ClinicalDocument")) {
+      if (raw.trim().startsWith("<?xml") || raw.includes("ClinicalDocument")) {
         const p = parseCCDA(raw);
-        if (p) {
-          setPatientName(p.patientName); setPatientDOB(p.patientDOB);
-          setVisitDate(p.visitDate);     setProvider(p.provider);
-          setEmrText(p.allText);
-          setImportLog({type:"success",source:p.source,name:p.patientName,dob:p.patientDOB,
-            mrn:p.mrn,problems:p.problems.length,meds:p.medications.length,
-            vitals:Object.keys(p.vitals).length,parsed:p});
-          setInputTab("emr"); return;
-        }
+        if (p) { setPatientName(p.patientName); setPatientDOB(p.patientDOB); setVisitDate(p.visitDate); setProvider(p.provider); setEmrText(p.allText); setImportLog({type:"success",source:p.source,name:p.patientName,dob:p.patientDOB,mrn:p.mrn,problems:p.problems.length,meds:p.medications.length,vitals:Object.keys(p.vitals).length}); setInputTab("emr"); return; }
       }
       if (raw.startsWith("MSH|")) {
         const p = parseHL7(raw);
-        if (p) {
-          setPatientName(p.patientName); setPatientDOB(p.patientDOB);
-          setVisitDate(p.visitDate);     setProvider(p.provider);
-          setEmrText(p.allText);
-          setImportLog({type:"success",source:p.source,name:p.patientName,dob:p.patientDOB,
-            mrn:p.mrn,problems:p.problems.length,meds:p.medications.length,vitals:0});
-          setInputTab("emr"); return;
-        }
+        if (p) { setPatientName(p.patientName); setPatientDOB(p.patientDOB); setVisitDate(p.visitDate); setProvider(p.provider); setEmrText(p.allText); setImportLog({type:"success",source:p.source,name:p.patientName,dob:p.patientDOB,mrn:p.mrn,problems:p.problems.length,meds:p.medications.length,vitals:0}); setInputTab("emr"); return; }
       }
       if (raw.includes(",")) {
         const patients = parseCSVBatch(raw);
-        if (patients && patients.length > 1) {
-          setBatchList(patients);
-          setImportLog({type:"batch",source:"CSV Batch",count:patients.length});
-          setInputTab("batch"); return;
-        }
+        if (patients && patients.length > 1) { setBatchList(patients); setImportLog({type:"batch",source:"CSV Batch",count:patients.length}); setInputTab("batch"); return; }
       }
-      setEmrText(raw);
-      setImportLog({type:"plain",source:"Plain text"});
-      setInputTab("emr");
+      setEmrText(raw); setImportLog({type:"plain",source:"Plain text"}); setInputTab("emr");
     };
-    reader.readAsText(file);
-    e.target.value = "";
+    reader.readAsText(file); e.target.value = "";
   };
 
   const runBatch = async () => {
     setBatchRunning(true); setBatchDone(0);
     const results = [];
-    for (let i=0; i<batchList.length; i++) {
-      const rec = buildResult(batchList[i]);
-      results.push(rec);
-      setQueue(prev=>[rec,...prev].slice(0,500));
-      setBatchDone(i+1);
-      await new Promise(r=>setTimeout(r,60));
-    }
-    setBatchRunning(false);
-    exportCSV(results);
+    for (let i=0; i<batchList.length; i++) { const rec = buildResult(batchList[i]); results.push(rec); setQueue(prev=>[rec,...prev].slice(0,500)); setBatchDone(i+1); await new Promise(r=>setTimeout(r,60)); }
+    setBatchRunning(false); exportCSV(results);
   };
 
-  const clearAll = () => {
-    setEmrText(""); setResult(null); setAiInsight(""); setImportLog(null);
-    setPatientName(""); setPatientDOB(""); setVisitDate(""); setProvider("");
-    setBatchList([]);
-  };
+  const clearAll = () => { setEmrText(""); setResult(null); setAiInsight(""); setImportLog(null); setPatientName(""); setPatientDOB(""); setVisitDate(""); setProvider(""); setBatchList([]); };
 
   return (
     <div style={S.root}>
@@ -423,28 +390,28 @@ export default function App() {
             <div style={S.logoSub}>ANS · ABI · ICD-10 · CPT · Epic &amp; eCW EMR Import</div>
           </div>
         </div>
-        <div style={S.stats}>
-          {[["Charts",queue.length],["ANS ✓",queue.filter(p=>p.ansEligible).length],["ABI ✓",queue.filter(p=>p.abiEligible).length]].map(([l,v])=>(
-            <div key={l} style={S.statPill}><b style={S.statN}>{v}</b>{l}</div>
-          ))}
+        <div style={{display:"flex",alignItems:"center",gap:12}}>
+          <div style={S.stats}>
+            {[["Charts",queue.length],["ANS ✓",queue.filter(p=>p.ansEligible).length],["ABI ✓",queue.filter(p=>p.abiEligible).length]].map(([l,v])=>(
+              <div key={l} style={S.statPill}><b style={S.statN}>{v}</b>{l}</div>
+            ))}
+          </div>
+          <div style={S.userPill}>
+            <span style={S.userAvatar}>{user.name[0]}</span>
+            <span style={S.userName}>{user.name}</span>
+            <span style={S.userRole}>{user.role}</span>
+          </div>
+          <button style={S.logoutBtn} onClick={onLogout}>Sign Out</button>
         </div>
       </header>
 
       <div style={S.layout}>
-        {/* LEFT */}
         <div style={S.left}>
           <div style={S.card}>
             <div style={S.cardHd}>👤 Patient Information</div>
             <div style={S.grid2}>
-              {[["Patient Name","text",patientName,setPatientName,"Last, First"],
-                ["Date of Birth","date",patientDOB,setPatientDOB,""],
-                ["Visit / Appt Date","date",visitDate,setVisitDate,""],
-                ["Provider / NPI","text",provider,setProvider,"Dr. Smith / NPI"]
-              ].map(([label,type,val,setter,ph])=>(
-                <div key={label} style={S.fg}>
-                  <label style={S.lbl}>{label}</label>
-                  <input style={S.inp} type={type} value={val} onChange={e=>setter(e.target.value)} placeholder={ph} />
-                </div>
+              {[["Patient Name","text",patientName,setPatientName,"Last, First"],["Date of Birth","date",patientDOB,setPatientDOB,""],["Visit / Appt Date","date",visitDate,setVisitDate,""],["Provider / NPI","text",provider,setProvider,"Dr. Smith / NPI"]].map(([label,type,val,setter,ph])=>(
+                <div key={label} style={S.fg}><label style={S.lbl}>{label}</label><input style={S.inp} type={type} value={val} onChange={e=>setter(e.target.value)} placeholder={ph} /></div>
               ))}
             </div>
           </div>
@@ -458,34 +425,15 @@ export default function App() {
 
             {inputTab==="emr" && <>
               <div style={S.cardHd}>📄 Paste Chart / SOAP Note</div>
-              {importLog?.type==="success" && (
-                <div style={S.banner}>
-                  <div style={S.bannerTitle}>✓ {importLog.source} parsed</div>
-                  <div style={S.bannerMeta}>
-                    <b>{importLog.name}</b> · DOB: {importLog.dob} · MRN: {importLog.mrn||"—"}<br/>
-                    {importLog.problems} diagnoses · {importLog.meds} medications · {importLog.vitals} vitals
-                  </div>
-                </div>
-              )}
-              {importLog?.type==="plain" && (
-                <div style={{...S.banner,borderColor:"#f5a62344"}}>
-                  <div style={{...S.bannerTitle,color:"#f5a623"}}>⚠ Plain text loaded — fill patient info above</div>
-                </div>
-              )}
-              <textarea style={S.textarea} value={emrText} onChange={e=>setEmrText(e.target.value)}
-                placeholder={"Paste full EMR note, SOAP note, or problem list here...\n\nOr use 📥 EMR Import to upload CCD/CCDA (XML), HL7, or CSV from eClinicalWorks or Epic."} />
+              {importLog?.type==="success" && <div style={S.banner}><div style={S.bannerTitle}>✓ {importLog.source} parsed</div><div style={S.bannerMeta}><b>{importLog.name}</b> · DOB: {importLog.dob} · MRN: {importLog.mrn||"—"}<br/>{importLog.problems} diagnoses · {importLog.meds} medications</div></div>}
+              {importLog?.type==="plain" && <div style={{...S.banner,borderColor:"#f5a62344"}}><div style={{...S.bannerTitle,color:"#f5a623"}}>⚠ Plain text loaded — fill patient info above</div></div>}
+              <textarea style={S.textarea} value={emrText} onChange={e=>setEmrText(e.target.value)} placeholder={"Paste full EMR note, SOAP note, or problem list here...\n\nOr use 📥 EMR Import to upload CCD/CCDA (XML), HL7, or CSV from eClinicalWorks or Epic."} />
             </>}
 
             {inputTab==="import" && <>
               <div style={S.cardHd}>📥 Import Directly from EMR</div>
               <div style={S.importGrid}>
-                {[
-                  {emr:"Epic",           fmt:"CCD/CCDA XML",   ext:".xml",icon:"🏥",hint:"Chart Review → Share → Download CCD"},
-                  {emr:"eClinicalWorks", fmt:"CCD/CCDA XML",   ext:".xml",icon:"🖥",hint:"Patient Hub → Export → Continuity of Care"},
-                  {emr:"eClinicalWorks", fmt:"HL7 v2 Message", ext:".hl7",icon:"📨",hint:"Reports → Patient Export → HL7 Format"},
-                  {emr:"Epic / eCW",     fmt:"Schedule CSV",   ext:".csv",icon:"📊",hint:"Export daily schedule for batch processing"},
-                  {emr:"Any EMR",        fmt:"Plain Text",     ext:".txt",icon:"📄",hint:"Copy-paste or plain text chart file"},
-                ].map(({emr,fmt,ext,icon,hint})=>(
+                {[{emr:"Epic",fmt:"CCD/CCDA XML",ext:".xml",icon:"🏥",hint:"Chart Review → Share → Download CCD"},{emr:"eClinicalWorks",fmt:"CCD/CCDA XML",ext:".xml",icon:"🖥",hint:"Patient Hub → Export → Continuity of Care"},{emr:"eClinicalWorks",fmt:"HL7 v2 Message",ext:".hl7",icon:"📨",hint:"Reports → Patient Export → HL7 Format"},{emr:"Epic / eCW",fmt:"Schedule CSV",ext:".csv",icon:"📊",hint:"Export daily schedule for batch processing"},{emr:"Any EMR",fmt:"Plain Text",ext:".txt",icon:"📄",hint:"Copy-paste or plain text chart file"}].map(({emr,fmt,ext,icon,hint})=>(
                   <div key={emr+fmt} style={S.impCard} onClick={()=>importRef.current?.click()}>
                     <div style={{fontSize:24,marginBottom:5}}>{icon}</div>
                     <div style={{fontSize:12,fontWeight:700,color:"#4a9eff"}}>{emr}</div>
@@ -495,17 +443,9 @@ export default function App() {
                   </div>
                 ))}
               </div>
-              <input ref={importRef} type="file" accept=".xml,.hl7,.csv,.txt,.rtf,.ccd,.ccda"
-                style={{display:"none"}} onChange={handleImport} />
-              <button style={S.btnImport} onClick={()=>importRef.current?.click()}>
-                ⬆ Upload EMR File (CCD/CCDA · HL7 · CSV · TXT)
-              </button>
-              <div style={S.impNote}>
-                <b>How to export from your EMR:</b><br/>
-                <span style={{color:"#4a9eff"}}>Epic →</span> Chart Review → Share → Download as CCD (XML)<br/>
-                <span style={{color:"#4a9eff"}}>eCW →</span> Patient Hub → Export → Continuity of Care Document<br/>
-                <span style={{color:"#4a9eff"}}>Batch →</span> Export daily appointment schedule as CSV
-              </div>
+              <input ref={importRef} type="file" accept=".xml,.hl7,.csv,.txt,.rtf,.ccd,.ccda" style={{display:"none"}} onChange={handleImport} />
+              <button style={S.btnImport} onClick={()=>importRef.current?.click()}>⬆ Upload EMR File (CCD/CCDA · HL7 · CSV · TXT)</button>
+              <div style={S.impNote}><b>How to export from your EMR:</b><br/><span style={{color:"#4a9eff"}}>Epic →</span> Chart Review → Share → Download as CCD (XML)<br/><span style={{color:"#4a9eff"}}>eCW →</span> Patient Hub → Export → Continuity of Care Document<br/><span style={{color:"#4a9eff"}}>Batch →</span> Export daily appointment schedule as CSV</div>
             </>}
 
             {inputTab==="batch" && <>
@@ -518,30 +458,14 @@ export default function App() {
                   <button style={S.btnImport} onClick={()=>setInputTab("import")}>Go to Import →</button>
                 </div>
               ) : <>
-                <div style={{...S.banner,marginBottom:10}}>
-                  <div style={S.bannerTitle}>✓ {batchList.length} patients loaded from CSV</div>
-                  <div style={S.bannerMeta}>Click Run Batch to process all and auto-export CSV.</div>
-                </div>
+                <div style={{...S.banner,marginBottom:10}}><div style={S.bannerTitle}>✓ {batchList.length} patients loaded from CSV</div><div style={S.bannerMeta}>Click Run Batch to process all and auto-export CSV.</div></div>
                 <div style={{display:"flex",flexDirection:"column",gap:4,marginBottom:12}}>
-                  {batchList.slice(0,8).map((p,i)=>(
-                    <div key={i} style={S.bRow}>
-                      <span style={{color:"#4a5880",fontWeight:600,fontSize:11}}>{i+1}</span>
-                      <span style={{flex:1,color:"#c0cce8",fontSize:12}}>{p.patientName}</span>
-                      <span style={{color:"#5a6880",fontSize:11}}>{p.visitDate||"—"}</span>
-                    </div>
-                  ))}
+                  {batchList.slice(0,8).map((p,i)=>(<div key={i} style={S.bRow}><span style={{color:"#4a5880",fontWeight:600,fontSize:11}}>{i+1}</span><span style={{flex:1,color:"#c0cce8",fontSize:12}}>{p.patientName}</span><span style={{color:"#5a6880",fontSize:11}}>{p.visitDate||"—"}</span></div>))}
                   {batchList.length>8 && <div style={{color:"#4a5880",fontSize:11,padding:"4px 8px"}}>+{batchList.length-8} more…</div>}
                 </div>
                 {batchRunning ? (
-                  <div>
-                    <div style={{height:5,background:"#1a2235",borderRadius:3,overflow:"hidden"}}>
-                      <div style={{height:"100%",background:"linear-gradient(90deg,#7c5cfc,#0ea5e9)",borderRadius:3,width:`${(batchDone/batchList.length)*100}%`,transition:"width .3s"}} />
-                    </div>
-                    <div style={{color:"#8899bb",fontSize:12,marginTop:5,textAlign:"center"}}>Processing {batchDone}/{batchList.length}…</div>
-                  </div>
-                ) : (
-                  <button style={S.btnPrimary} onClick={runBatch}>⚡ Run Batch — {batchList.length} Patients → Export CSV</button>
-                )}
+                  <div><div style={{height:5,background:"#1a2235",borderRadius:3,overflow:"hidden"}}><div style={{height:"100%",background:"linear-gradient(90deg,#7c5cfc,#0ea5e9)",borderRadius:3,width:`${(batchDone/batchList.length)*100}%`,transition:"width .3s"}} /></div><div style={{color:"#8899bb",fontSize:12,marginTop:5,textAlign:"center"}}>Processing {batchDone}/{batchList.length}…</div></div>
+                ) : (<button style={S.btnPrimary} onClick={runBatch}>⚡ Run Batch — {batchList.length} Patients → Export CSV</button>)}
               </>}
             </>}
 
@@ -559,32 +483,17 @@ export default function App() {
             <div style={S.card}>
               <div style={S.cardHd}>👥 Patient Queue ({queue.length})</div>
               <div style={{display:"flex",flexDirection:"column",gap:5}}>
-                {queue.slice(0,10).map((p,i)=>(
-                  <div key={i} style={S.qItem} onClick={()=>{setResult(p);setAiInsight("");}}>
-                    <div style={{flex:1}}>
-                      <div style={{fontSize:13,fontWeight:500,color:"#e2e8f8"}}>{p.patientName}</div>
-                      <div style={{fontSize:10,color:"#4a5880"}}>{p.source} · {p.visitDate||"—"}</div>
-                    </div>
-                    <div style={{display:"flex",gap:4}}>
-                      {p.ansEligible&&<span style={S.bANS}>ANS</span>}
-                      {p.abiEligible&&<span style={S.bABI}>ABI</span>}
-                    </div>
-                  </div>
-                ))}
+                {queue.slice(0,10).map((p,i)=>(<div key={i} style={S.qItem} onClick={()=>{setResult(p);setAiInsight("");}}><div style={{flex:1}}><div style={{fontSize:13,fontWeight:500,color:"#e2e8f8"}}>{p.patientName}</div><div style={{fontSize:10,color:"#4a5880"}}>{p.source} · {p.visitDate||"—"}</div></div><div style={{display:"flex",gap:4}}>{p.ansEligible&&<span style={S.bANS}>ANS</span>}{p.abiEligible&&<span style={S.bABI}>ABI</span>}</div></div>))}
                 {queue.length>1&&<button style={{...S.btnSec,marginTop:4,fontSize:11}} onClick={()=>exportCSV(queue)}>⬇ Export All {queue.length} as CSV</button>}
               </div>
             </div>
           )}
         </div>
 
-        {/* RIGHT */}
         <div style={S.right}>
           {!result&&!isAnalyzing&&<EmptyState />}
           {isAnalyzing&&<LoadingState />}
-          {result&&!isAnalyzing&&(
-            <ResultPanel rec={result} aiInsight={aiInsight} aiLoading={aiLoading}
-              onTXT={()=>exportTXT(result,aiInsight)} onCSV={()=>exportCSV([result])} onClear={clearAll} />
-          )}
+          {result&&!isAnalyzing&&(<ResultPanel rec={result} aiInsight={aiInsight} aiLoading={aiLoading} onTXT={()=>exportTXT(result,aiInsight)} onCSV={()=>exportCSV([result])} onClear={clearAll} />)}
         </div>
       </div>
 
@@ -603,86 +512,23 @@ export default function App() {
   );
 }
 
-// ─── Sub-components ────────────────────────────────────────────────────────────
 function ResultPanel({rec,aiInsight,aiLoading,onTXT,onCSV,onClear}) {
   return (
     <div style={{display:"flex",flexDirection:"column",gap:16,animation:"fadeUp .4s ease"}}>
       <div style={S.summBar}>
         <div>
           <div style={{fontSize:18,fontWeight:700,color:"#f0f4ff"}}>{rec.patientName}</div>
-          <div style={{fontSize:11,color:"#5a6880",marginTop:2}}>
-            DOB: {rec.patientDOB||"—"} · MRN: {rec.mrn||"—"} · Visit: {rec.visitDate||"—"} · {rec.provider||"—"}
-            <span style={S.srcBadge}>{rec.source}</span>
-          </div>
+          <div style={{fontSize:11,color:"#5a6880",marginTop:2}}>DOB: {rec.patientDOB||"—"} · MRN: {rec.mrn||"—"} · Visit: {rec.visitDate||"—"} · {rec.provider||"—"}<span style={S.srcBadge}>{rec.source}</span></div>
         </div>
         <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
-          {["ANS","ABI"].map(t=>{
-            const eligible = rec[`${t.toLowerCase()}Eligible`];
-            const conf = rec[`${t.toLowerCase()}Conf`];
-            return (
-              <div key={t} style={{display:"flex",alignItems:"center",gap:6,padding:"8px 13px",borderRadius:9,fontSize:13,fontWeight:600,
-                ...(eligible?{background:"#00d26a18",border:"1px solid #00d26a44",color:"#00d26a"}
-                            :{background:"#ff6b6b18",border:"1px solid #ff6b6b44",color:"#ff6b6b"})}}>
-                {eligible?"✓":"✗"} {t} Eligible
-                <span style={{fontSize:10,opacity:.8,background:"rgba(0,0,0,.25)",padding:"1px 6px",borderRadius:4}}>{conf.level}</span>
-              </div>
-            );
-          })}
+          {["ANS","ABI"].map(t=>{ const eligible = rec[`${t.toLowerCase()}Eligible`]; const conf = rec[`${t.toLowerCase()}Conf`]; return (<div key={t} style={{display:"flex",alignItems:"center",gap:6,padding:"8px 13px",borderRadius:9,fontSize:13,fontWeight:600,...(eligible?{background:"#00d26a18",border:"1px solid #00d26a44",color:"#00d26a"}:{background:"#ff6b6b18",border:"1px solid #ff6b6b44",color:"#ff6b6b"})}}>{eligible?"✓":"✗"} {t} Eligible<span style={{fontSize:10,opacity:.8,background:"rgba(0,0,0,.25)",padding:"1px 6px",borderRadius:4}}>{conf.level}</span></div>); })}
         </div>
       </div>
-
-      {(rec.problems||[]).length>0&&(
-        <div style={S.card}>
-          <div style={S.cardHd}>🏥 Diagnoses Extracted from EMR ({rec.problems.length})</div>
-          <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-            {rec.problems.map((p,i)=>(
-              <div key={i} style={S.probChip}>
-                <span style={{fontFamily:"'JetBrains Mono',monospace",color:"#4a9eff",fontWeight:600}}>{p.code}</span>
-                <span style={{color:"#8899bb",marginLeft:6,fontSize:11}}>{p.display}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {rec.vitals&&Object.keys(rec.vitals).length>0&&(
-        <div style={S.card}>
-          <div style={S.cardHd}>📊 Vitals from EMR</div>
-          <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
-            {Object.entries(rec.vitals).map(([k,v])=>(
-              <div key={k} style={S.vChip}>
-                <span style={{fontSize:10,color:"#4a5880",textTransform:"uppercase"}}>{k.replace(/([A-Z])/g," $1")}</span>
-                <span style={{color:"#e2e8f8",fontFamily:"'JetBrains Mono',monospace",fontSize:13,marginLeft:5}}>{v}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
+      {(rec.problems||[]).length>0&&(<div style={S.card}><div style={S.cardHd}>🏥 Diagnoses from EMR ({rec.problems.length})</div><div style={{display:"flex",flexWrap:"wrap",gap:6}}>{rec.problems.map((p,i)=>(<div key={i} style={S.probChip}><span style={{fontFamily:"'JetBrains Mono',monospace",color:"#4a9eff",fontWeight:600}}>{p.code}</span><span style={{color:"#8899bb",marginLeft:6,fontSize:11}}>{p.display}</span></div>))}</div></div>)}
+      {rec.vitals&&Object.keys(rec.vitals).length>0&&(<div style={S.card}><div style={S.cardHd}>📊 Vitals from EMR</div><div style={{display:"flex",flexWrap:"wrap",gap:8}}>{Object.entries(rec.vitals).map(([k,v])=>(<div key={k} style={S.vChip}><span style={{fontSize:10,color:"#4a5880",textTransform:"uppercase"}}>{k.replace(/([A-Z])/g," $1")}</span><span style={{color:"#e2e8f8",fontFamily:"'JetBrains Mono',monospace",fontSize:13,marginLeft:5}}>{v}</span></div>))}</div></div>)}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-        {["ANS","ABI"].map(t=>{
-          const conf = rec[`${t.toLowerCase()}Conf`];
-          const kws  = rec[`${t.toLowerCase()}Keywords`];
-          return (
-            <div key={t} style={S.confCard}>
-              <div style={{fontSize:11,fontWeight:600,color:"#8899bb",textTransform:"uppercase",letterSpacing:".8px",marginBottom:10}}>{t} Confidence</div>
-              <div style={{height:6,background:"#111827",borderRadius:3,overflow:"hidden",marginBottom:8}}>
-                <div style={{height:"100%",borderRadius:3,background:conf.color,width:`${conf.pct}%`,transition:"width 1s ease"}} />
-              </div>
-              <div style={{display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:6}}>
-                <span style={{fontWeight:700,color:conf.color}}>{conf.level} ({conf.pct}%)</span>
-                <span style={{color:"#4a5880"}}>{kws.length} indicators</span>
-              </div>
-              <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
-                {kws.slice(0,8).map(kw=>(
-                  <span key={kw} style={{fontSize:10,background:"#111827",border:"1px solid #1e2840",borderRadius:4,padding:"2px 6px",color:"#6a7a9a"}}>{kw}</span>
-                ))}
-              </div>
-            </div>
-          );
-        })}
+        {["ANS","ABI"].map(t=>{ const conf = rec[`${t.toLowerCase()}Conf`]; const kws = rec[`${t.toLowerCase()}Keywords`]; return (<div key={t} style={S.confCard}><div style={{fontSize:11,fontWeight:600,color:"#8899bb",textTransform:"uppercase",letterSpacing:".8px",marginBottom:10}}>{t} Confidence</div><div style={{height:6,background:"#111827",borderRadius:3,overflow:"hidden",marginBottom:8}}><div style={{height:"100%",borderRadius:3,background:conf.color,width:`${conf.pct}%`,transition:"width 1s ease"}} /></div><div style={{display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:6}}><span style={{fontWeight:700,color:conf.color}}>{conf.level} ({conf.pct}%)</span><span style={{color:"#4a5880"}}>{kws.length} indicators</span></div><div style={{display:"flex",flexWrap:"wrap",gap:4}}>{kws.slice(0,8).map(kw=>(<span key={kw} style={{fontSize:10,background:"#111827",border:"1px solid #1e2840",borderRadius:4,padding:"2px 6px",color:"#6a7a9a"}}>{kw}</span>))}</div></div>); })}
       </div>
-
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
         {rec.ansEligible&&<CodeTable title="ANS — ICD-10 Codes" codes={rec.ansICD} color="#7c5cfc" icon="🧠" />}
         {rec.abiEligible&&<CodeTable title="ABI — ICD-10 Codes" codes={rec.abiICD} color="#0ea5e9" icon="🦵" />}
@@ -691,22 +537,10 @@ function ResultPanel({rec,aiInsight,aiLoading,onTXT,onCSV,onClear}) {
         {rec.ansEligible&&<CodeTable title="ANS — CPT Billing" codes={rec.ansCPT} color="#7c5cfc" icon="💊" isCPT />}
         {rec.abiEligible&&<CodeTable title="ABI — CPT Billing" codes={rec.abiCPT} color="#0ea5e9" icon="🩺" isCPT />}
       </div>
-
       <div style={S.aiBox}>
-        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
-          <span style={{color:"#7c5cfc",fontSize:18}}>✦</span>
-          <span style={{fontSize:12,fontWeight:700,color:"#c0b4ff",textTransform:"uppercase",letterSpacing:".7px",flex:1}}>AI Medical Necessity Documentation</span>
-          {aiLoading&&<span style={{fontSize:11,color:"#7c5cfc",animation:"pulse 1.5s infinite"}}>Generating…</span>}
-        </div>
-        {aiLoading ? <Skeleton /> : aiInsight ? (
-          <div style={{display:"flex",flexDirection:"column",gap:4}}>
-            {aiInsight.split("\n").map((line,i)=>(
-              <p key={i} style={line.match(/^\d\)/)?{fontSize:13,fontWeight:600,color:"#a8b8e8",marginTop:6}:{fontSize:13,color:"#8899bb",lineHeight:1.7}}>{line}</p>
-            ))}
-          </div>
-        ):null}
+        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}><span style={{color:"#7c5cfc",fontSize:18}}>✦</span><span style={{fontSize:12,fontWeight:700,color:"#c0b4ff",textTransform:"uppercase",letterSpacing:".7px",flex:1}}>AI Medical Necessity Documentation</span>{aiLoading&&<span style={{fontSize:11,color:"#7c5cfc",animation:"pulse 1.5s infinite"}}>Generating…</span>}</div>
+        {aiLoading ? <Skeleton /> : aiInsight ? (<div style={{display:"flex",flexDirection:"column",gap:4}}>{aiInsight.split("\n").map((line,i)=>(<p key={i} style={line.match(/^\d\)/)?{fontSize:13,fontWeight:600,color:"#a8b8e8",marginTop:6}:{fontSize:13,color:"#8899bb",lineHeight:1.7}}>{line}</p>))}</div>):null}
       </div>
-
       <div style={{display:"flex",gap:8,paddingBottom:20,flexWrap:"wrap"}}>
         <button style={S.expBtn} onClick={onTXT}>⬇ Export Report (.txt)</button>
         <button style={S.expBtn} onClick={onCSV}>📊 Export CSV</button>
@@ -715,120 +549,61 @@ function ResultPanel({rec,aiInsight,aiLoading,onTXT,onCSV,onClear}) {
     </div>
   );
 }
-
 function CodeTable({title,codes,color,icon,isCPT}) {
   if (!codes.length) return null;
-  return (
-    <div style={{...S.card,borderTop:`2px solid ${color}44`}}>
-      <div style={{display:"flex",alignItems:"center",gap:7,fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:".7px",marginBottom:10,color}}>{icon} {title}</div>
-      <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
-        <thead><tr>
-          <th style={{textAlign:"left",padding:"4px 6px",fontSize:10,textTransform:"uppercase",color,borderBottom:"1px solid #1e2840"}}>Code</th>
-          <th style={{textAlign:"left",padding:"4px 6px",fontSize:10,textTransform:"uppercase",color:"#4a5880",borderBottom:"1px solid #1e2840"}}>Description</th>
-          {isCPT&&<th style={{textAlign:"right",padding:"4px 6px",fontSize:10,textTransform:"uppercase",color:"#4a5880",borderBottom:"1px solid #1e2840"}}>Est. Reimb.</th>}
-        </tr></thead>
-        <tbody>
-          {codes.map((c,i)=>(
-            <tr key={c.code} style={{background:i%2===0?"transparent":"#111827"}}>
-              <td style={{padding:"5px 6px",fontFamily:"'JetBrains Mono',monospace",color,fontWeight:600,whiteSpace:"nowrap"}}>{c.code}</td>
-              <td style={{padding:"5px 6px",color:"#c0cce8",lineHeight:1.4}}>{c.description}</td>
-              {isCPT&&<td style={{padding:"5px 6px",textAlign:"right",color:"#a8ff8a",fontFamily:"'JetBrains Mono',monospace",whiteSpace:"nowrap"}}>{c.reimbursement}</td>}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
+  return (<div style={{...S.card,borderTop:`2px solid ${color}44`}}><div style={{display:"flex",alignItems:"center",gap:7,fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:".7px",marginBottom:10,color}}>{icon} {title}</div><table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}><thead><tr><th style={{textAlign:"left",padding:"4px 6px",fontSize:10,textTransform:"uppercase",color,borderBottom:"1px solid #1e2840"}}>Code</th><th style={{textAlign:"left",padding:"4px 6px",fontSize:10,textTransform:"uppercase",color:"#4a5880",borderBottom:"1px solid #1e2840"}}>Description</th>{isCPT&&<th style={{textAlign:"right",padding:"4px 6px",fontSize:10,textTransform:"uppercase",color:"#4a5880",borderBottom:"1px solid #1e2840"}}>Est. Reimb.</th>}</tr></thead><tbody>{codes.map((c,i)=>(<tr key={c.code} style={{background:i%2===0?"transparent":"#111827"}}><td style={{padding:"5px 6px",fontFamily:"'JetBrains Mono',monospace",color,fontWeight:600,whiteSpace:"nowrap"}}>{c.code}</td><td style={{padding:"5px 6px",color:"#c0cce8",lineHeight:1.4}}>{c.description}</td>{isCPT&&<td style={{padding:"5px 6px",textAlign:"right",color:"#a8ff8a",fontFamily:"'JetBrains Mono',monospace",whiteSpace:"nowrap"}}>{c.reimbursement}</td>}</tr>))}</tbody></table></div>);
 }
+function Skeleton() { return (<div style={{display:"flex",flexDirection:"column",gap:8}}>{[100,80,93,67,85].map((w,i)=>(<div key={i} style={{height:12,borderRadius:6,width:`${w}%`,background:"linear-gradient(90deg,#1a2240 25%,#2a3460 50%,#1a2240 75%)",backgroundSize:"400px 100%",animation:`shimmer 1.5s infinite`,animationDelay:`${i*.1}s`}} />))}</div>); }
+function EmptyState() { return (<div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"100%",textAlign:"center",padding:48}}><div style={{fontSize:62,marginBottom:14}}>🧬</div><div style={{fontSize:19,fontWeight:700,color:"#c0cce8",marginBottom:8}}>MedNecessity AI Engine</div><div style={{fontSize:13,color:"#5a6880",maxWidth:500,lineHeight:1.85,marginBottom:26}}>Paste a chart note, import a CCD/CCDA XML from Epic or eCW, upload an HL7 file,<br/>or batch-process a full day's schedule from a CSV export.</div><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,textAlign:"left",maxWidth:480}}>{["CCD/CCDA XML (Epic & eCW)","HL7 v2 Messages (eCW)","CSV Schedule Batch Import","Auto ICD-10 Code Extraction","Autonomic Neuropathy Detection","Peripheral Arterial Disease Flags","CPT Billing Recommendations","AI Medical Necessity Letter"].map(c=>(<div key={c} style={{fontSize:12,color:"#4a9eff",background:"#0a1628",border:"1px solid #1e2840",borderRadius:6,padding:"6px 10px"}}>✓ {c}</div>))}</div></div>); }
+function LoadingState() { return (<div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"100%",gap:20}}><div style={{position:"relative",width:80,height:80}}><div style={{position:"absolute",inset:0,borderRadius:"50%",border:"2px solid #7c5cfc",animation:"ring 1.5s ease-in-out infinite"}} /><div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:32,color:"#7c5cfc"}}>⚕</div></div><div style={{fontSize:16,fontWeight:600,color:"#c0cce8"}}>Analyzing EMR Data…</div><div style={{display:"flex",flexDirection:"column",gap:6}}>{["Parsing clinical indicators","Extracting EMR diagnoses","Mapping ICD-10 codes","Selecting CPT billing codes"].map((s,i)=>(<div key={s} style={{fontSize:12,color:"#4a5880",animation:"pulse 1.5s ease-in-out infinite",animationDelay:`${i*.3}s`}}>● {s}</div>))}</div></div>); }
 
-function Skeleton() {
-  return (
-    <div style={{display:"flex",flexDirection:"column",gap:8}}>
-      {[100,80,93,67,85].map((w,i)=>(
-        <div key={i} style={{height:12,borderRadius:6,width:`${w}%`,background:"linear-gradient(90deg,#1a2240 25%,#2a3460 50%,#1a2240 75%)",backgroundSize:"400px 100%",animation:`shimmer 1.5s infinite`,animationDelay:`${i*.1}s`}} />
-      ))}
-    </div>
-  );
-}
-
-function EmptyState() {
-  return (
-    <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"100%",textAlign:"center",padding:48}}>
-      <div style={{fontSize:62,marginBottom:14}}>🧬</div>
-      <div style={{fontSize:19,fontWeight:700,color:"#c0cce8",marginBottom:8}}>MedNecessity AI Engine</div>
-      <div style={{fontSize:13,color:"#5a6880",maxWidth:500,lineHeight:1.85,marginBottom:26}}>
-        Paste a chart note, import a CCD/CCDA XML from Epic or eCW, upload an HL7 file,<br/>or batch-process a full day's schedule from a CSV export.
-      </div>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,textAlign:"left",maxWidth:480}}>
-        {["CCD/CCDA XML (Epic & eCW)","HL7 v2 Messages (eCW)","CSV Schedule Batch Import","Auto ICD-10 Code Extraction",
-          "Autonomic Neuropathy Detection","Peripheral Arterial Disease Flags","CPT Billing Recommendations","AI Medical Necessity Letter"].map(c=>(
-          <div key={c} style={{fontSize:12,color:"#4a9eff",background:"#0a1628",border:"1px solid #1e2840",borderRadius:6,padding:"6px 10px"}}>✓ {c}</div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function LoadingState() {
-  return (
-    <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"100%",gap:20}}>
-      <div style={{position:"relative",width:80,height:80}}>
-        <div style={{position:"absolute",inset:0,borderRadius:"50%",border:"2px solid #7c5cfc",animation:"ring 1.5s ease-in-out infinite"}} />
-        <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:32,color:"#7c5cfc"}}>⚕</div>
-      </div>
-      <div style={{fontSize:16,fontWeight:600,color:"#c0cce8"}}>Analyzing EMR Data…</div>
-      <div style={{display:"flex",flexDirection:"column",gap:6}}>
-        {["Parsing clinical indicators","Extracting EMR diagnoses","Mapping ICD-10 codes","Selecting CPT billing codes"].map((s,i)=>(
-          <div key={s} style={{fontSize:12,color:"#4a5880",animation:"pulse 1.5s ease-in-out infinite",animationDelay:`${i*.3}s`}}>● {s}</div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ─── Styles ────────────────────────────────────────────────────────────────────
 const S = {
-  root:   {fontFamily:"'DM Sans',sans-serif",background:"#080c14",minHeight:"100vh",color:"#e2e8f8"},
-  header: {display:"flex",justifyContent:"space-between",alignItems:"center",padding:"13px 22px",background:"#0d1220",borderBottom:"1px solid #1e2840",position:"sticky",top:0,zIndex:100},
-  logo:   {display:"flex",alignItems:"center",gap:11},
+  root:{fontFamily:"'DM Sans',sans-serif",background:"#080c14",minHeight:"100vh",color:"#e2e8f8"},
+  header:{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"11px 22px",background:"#0d1220",borderBottom:"1px solid #1e2840",position:"sticky",top:0,zIndex:100},
+  logo:{display:"flex",alignItems:"center",gap:11},
   logoMark:{fontSize:26,background:"linear-gradient(135deg,#7c5cfc,#0ea5e9)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"},
   logoTitle:{fontSize:17,fontWeight:700,letterSpacing:"-.3px",color:"#f0f4ff"},
   logoSub:{fontSize:10,color:"#4a5880",letterSpacing:".5px",textTransform:"uppercase"},
-  stats:  {display:"flex",gap:8},
+  stats:{display:"flex",gap:8},
   statPill:{background:"#111827",border:"1px solid #1e2840",borderRadius:20,padding:"4px 12px",fontSize:12,color:"#8899bb"},
-  statN:  {color:"#e2e8f8",fontWeight:700,marginRight:4},
-  layout: {display:"flex",height:"calc(100vh - 57px)"},
-  left:   {width:390,minWidth:350,borderRight:"1px solid #1e2840",overflowY:"auto",padding:14,display:"flex",flexDirection:"column",gap:11},
-  right:  {flex:1,overflowY:"auto",padding:20},
-  card:   {background:"#0d1220",border:"1px solid #1e2840",borderRadius:12,padding:15},
-  cardHd: {fontSize:11,fontWeight:600,color:"#8899bb",textTransform:"uppercase",letterSpacing:".8px",marginBottom:11},
-  grid2:  {display:"grid",gridTemplateColumns:"1fr 1fr",gap:9},
-  fg:     {display:"flex",flexDirection:"column",gap:4},
-  lbl:    {fontSize:10,color:"#5a6880",textTransform:"uppercase",letterSpacing:".5px"},
-  inp:    {background:"#111827",border:"1px solid #1e2840",borderRadius:7,padding:"7px 9px",color:"#e2e8f8",fontSize:13,outline:"none",fontFamily:"inherit"},
-  tabRow: {display:"flex",gap:4,marginBottom:12},
-  tab:    {flex:1,padding:"6px 8px",borderRadius:7,border:"1px solid #1e2840",background:"transparent",color:"#5a6880",cursor:"pointer",fontSize:11,fontFamily:"inherit",fontWeight:500},
-  tabOn:  {background:"#161f33",color:"#e2e8f8",borderColor:"#2a3a60"},
+  statN:{color:"#e2e8f8",fontWeight:700,marginRight:4},
+  userPill:{display:"flex",alignItems:"center",gap:8,background:"#111827",border:"1px solid #1e2840",borderRadius:20,padding:"5px 12px"},
+  userAvatar:{width:22,height:22,borderRadius:"50%",background:"linear-gradient(135deg,#7c5cfc,#0ea5e9)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color:"#fff"},
+  userName:{fontSize:12,color:"#c0cce8",fontWeight:600},
+  userRole:{fontSize:10,color:"#4a5880",background:"#0d1220",padding:"1px 6px",borderRadius:4},
+  logoutBtn:{padding:"5px 12px",background:"transparent",border:"1px solid #2a3a60",borderRadius:7,color:"#8899bb",cursor:"pointer",fontSize:11,fontFamily:"inherit"},
+  layout:{display:"flex",height:"calc(100vh - 57px)"},
+  left:{width:390,minWidth:350,borderRight:"1px solid #1e2840",overflowY:"auto",padding:14,display:"flex",flexDirection:"column",gap:11},
+  right:{flex:1,overflowY:"auto",padding:20},
+  card:{background:"#0d1220",border:"1px solid #1e2840",borderRadius:12,padding:15},
+  cardHd:{fontSize:11,fontWeight:600,color:"#8899bb",textTransform:"uppercase",letterSpacing:".8px",marginBottom:11},
+  grid2:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:9},
+  fg:{display:"flex",flexDirection:"column",gap:4},
+  lbl:{fontSize:10,color:"#5a6880",textTransform:"uppercase",letterSpacing:".5px"},
+  inp:{background:"#111827",border:"1px solid #1e2840",borderRadius:7,padding:"7px 9px",color:"#e2e8f8",fontSize:13,outline:"none",fontFamily:"inherit"},
+  tabRow:{display:"flex",gap:4,marginBottom:12},
+  tab:{flex:1,padding:"6px 8px",borderRadius:7,border:"1px solid #1e2840",background:"transparent",color:"#5a6880",cursor:"pointer",fontSize:11,fontFamily:"inherit",fontWeight:500},
+  tabOn:{background:"#161f33",color:"#e2e8f8",borderColor:"#2a3a60"},
   textarea:{width:"100%",height:155,background:"#111827",border:"1px solid #1e2840",borderRadius:8,padding:11,color:"#e2e8f8",fontSize:12,resize:"vertical",outline:"none",fontFamily:"'DM Sans',sans-serif",lineHeight:1.6},
-  btnRow: {display:"flex",gap:8,marginTop:11},
+  btnRow:{display:"flex",gap:8,marginTop:11},
   btnPrimary:{flex:1,padding:"10px 14px",background:"linear-gradient(135deg,#7c5cfc,#0ea5e9)",border:"none",borderRadius:9,color:"#fff",fontWeight:700,cursor:"pointer",fontSize:13,fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:6},
-  btnSec: {padding:"10px 13px",background:"#111827",border:"1px solid #1e2840",borderRadius:9,color:"#8899bb",cursor:"pointer",fontSize:13,fontFamily:"inherit"},
+  btnSec:{padding:"10px 13px",background:"#111827",border:"1px solid #1e2840",borderRadius:9,color:"#8899bb",cursor:"pointer",fontSize:13,fontFamily:"inherit"},
   btnImport:{width:"100%",padding:"10px",background:"#111827",border:"1px dashed #2a3a60",borderRadius:9,color:"#8899bb",cursor:"pointer",fontSize:13,fontFamily:"inherit",marginTop:8},
-  banner: {background:"#0a1a12",border:"1px solid #00d26a33",borderRadius:8,padding:"10px 12px",marginBottom:10},
+  banner:{background:"#0a1a12",border:"1px solid #00d26a33",borderRadius:8,padding:"10px 12px",marginBottom:10},
   bannerTitle:{fontSize:12,fontWeight:600,color:"#00d26a"},
-  bannerMeta: {fontSize:11,color:"#4a7a5a",marginTop:3,lineHeight:1.6},
+  bannerMeta:{fontSize:11,color:"#4a7a5a",marginTop:3,lineHeight:1.6},
   importGrid:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:4},
   impCard:{background:"#111827",border:"1px solid #1e2840",borderRadius:9,padding:"10px 12px",cursor:"pointer"},
   impNote:{fontSize:11,color:"#4a5880",lineHeight:1.8,marginTop:8,padding:"10px 12px",background:"#0a1020",borderRadius:8,border:"1px solid #1a2235"},
-  bRow:   {display:"grid",gridTemplateColumns:"20px 1fr auto",gap:8,alignItems:"center",background:"#111827",borderRadius:6,padding:"5px 8px"},
-  qItem:  {display:"flex",alignItems:"center",gap:8,padding:"8px 10px",background:"#111827",borderRadius:8,cursor:"pointer",border:"1px solid #1a2235"},
-  bANS:   {fontSize:10,fontWeight:700,padding:"2px 6px",borderRadius:4,background:"#7c5cfc22",color:"#c0a0ff",border:"1px solid #7c5cfc44"},
-  bABI:   {fontSize:10,fontWeight:700,padding:"2px 6px",borderRadius:4,background:"#0ea5e922",color:"#70d0ff",border:"1px solid #0ea5e944"},
+  bRow:{display:"grid",gridTemplateColumns:"20px 1fr auto",gap:8,alignItems:"center",background:"#111827",borderRadius:6,padding:"5px 8px"},
+  qItem:{display:"flex",alignItems:"center",gap:8,padding:"8px 10px",background:"#111827",borderRadius:8,cursor:"pointer",border:"1px solid #1a2235"},
+  bANS:{fontSize:10,fontWeight:700,padding:"2px 6px",borderRadius:4,background:"#7c5cfc22",color:"#c0a0ff",border:"1px solid #7c5cfc44"},
+  bABI:{fontSize:10,fontWeight:700,padding:"2px 6px",borderRadius:4,background:"#0ea5e922",color:"#70d0ff",border:"1px solid #0ea5e944"},
   summBar:{background:"#0d1220",border:"1px solid #1e2840",borderRadius:12,padding:"13px 17px",display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:12},
   srcBadge:{marginLeft:8,background:"#1a2840",border:"1px solid #2a3a60",borderRadius:4,padding:"1px 7px",fontSize:10,color:"#4a9eff"},
   confCard:{background:"#0d1220",border:"1px solid #1e2840",borderRadius:12,padding:14},
   probChip:{background:"#111827",border:"1px solid #1e2840",borderRadius:6,padding:"4px 9px",fontSize:12,display:"flex",alignItems:"center"},
-  vChip:  {background:"#111827",border:"1px solid #1e2840",borderRadius:6,padding:"5px 10px",fontSize:12,display:"flex",alignItems:"center",gap:4},
-  aiBox:  {background:"#0a0e1a",border:"1px solid #2a1f5a",borderRadius:12,padding:17},
-  expBtn: {padding:"9px 17px",background:"linear-gradient(135deg,#7c5cfc22,#0ea5e922)",border:"1px solid #2a3a60",borderRadius:9,color:"#c0cce8",cursor:"pointer",fontSize:13,fontWeight:600,fontFamily:"inherit"},
+  vChip:{background:"#111827",border:"1px solid #1e2840",borderRadius:6,padding:"5px 10px",fontSize:12,display:"flex",alignItems:"center",gap:4},
+  aiBox:{background:"#0a0e1a",border:"1px solid #2a1f5a",borderRadius:12,padding:17},
+  expBtn:{padding:"9px 17px",background:"linear-gradient(135deg,#7c5cfc22,#0ea5e922)",border:"1px solid #2a3a60",borderRadius:9,color:"#c0cce8",cursor:"pointer",fontSize:13,fontWeight:600,fontFamily:"inherit"},
 };
