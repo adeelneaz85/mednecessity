@@ -7,6 +7,65 @@ const USERS = [
   { username: "manager",  password: "Manager2024!",       role: "Manager",  name: "Practice Manager"  },
 ];
 
+// ─── Wellness Tech Logo SVG ────────────────────────────────────────────────────
+function WTLogo({ size = 56 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="wtg1" x1="0" y1="0" x2="56" y2="56" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#00d4ff"/>
+          <stop offset="50%" stopColor="#0ea5e9"/>
+          <stop offset="100%" stopColor="#7c5cfc"/>
+        </linearGradient>
+        <linearGradient id="wtg2" x1="0" y1="0" x2="56" y2="56" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#00d4ff" stopOpacity="0.2"/>
+          <stop offset="100%" stopColor="#7c5cfc" stopOpacity="0.2"/>
+        </linearGradient>
+      </defs>
+      {/* Hexagon background */}
+      <path d="M28 2 L52 15.5 L52 40.5 L28 54 L4 40.5 L4 15.5 Z" fill="url(#wtg2)" stroke="url(#wtg1)" strokeWidth="1.5"/>
+      {/* W letter */}
+      <path d="M13 18 L18 36 L23 24 L28 36 L33 18" stroke="url(#wtg1)" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+      {/* T letter */}
+      <path d="M33 22 L46 22 M39.5 22 L39.5 38" stroke="url(#wtg1)" strokeWidth="2.8" strokeLinecap="round" fill="none"/>
+      {/* Pulse line at bottom */}
+      <path d="M10 44 L18 44 L21 39 L24 49 L27 41 L30 44 L46 44" stroke="url(#wtg1)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none" opacity="0.8"/>
+    </svg>
+  );
+}
+
+// ─── Animated background particles ────────────────────────────────────────────
+function Particles() {
+  const dots = Array.from({length: 30}, (_, i) => ({
+    x: Math.random() * 100, y: Math.random() * 100,
+    size: Math.random() * 3 + 1, delay: Math.random() * 4, duration: Math.random() * 3 + 3,
+    color: i % 3 === 0 ? "#00d4ff" : i % 3 === 1 ? "#7c5cfc" : "#0ea5e9"
+  }));
+  return (
+    <div style={{position:"absolute",inset:0,overflow:"hidden",pointerEvents:"none"}}>
+      {dots.map((d,i) => (
+        <div key={i} style={{
+          position:"absolute", left:`${d.x}%`, top:`${d.y}%`,
+          width:d.size, height:d.size, borderRadius:"50%", background:d.color,
+          opacity:0.4, animation:`floatDot ${d.duration}s ease-in-out ${d.delay}s infinite alternate`
+        }}/>
+      ))}
+      {/* Grid lines */}
+      <svg style={{position:"absolute",inset:0,width:"100%",height:"100%",opacity:0.04}} xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse">
+            <path d="M 60 0 L 0 0 0 60" fill="none" stroke="#00d4ff" strokeWidth="1"/>
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#grid)"/>
+      </svg>
+      {/* Glow orbs */}
+      <div style={{position:"absolute",top:"20%",left:"15%",width:300,height:300,borderRadius:"50%",background:"radial-gradient(circle,#7c5cfc22 0%,transparent 70%)",animation:"orbPulse 6s ease-in-out infinite"}}/>
+      <div style={{position:"absolute",bottom:"20%",right:"15%",width:250,height:250,borderRadius:"50%",background:"radial-gradient(circle,#00d4ff18 0%,transparent 70%)",animation:"orbPulse 8s ease-in-out 2s infinite"}}/>
+    </div>
+  );
+}
+
 // ─── Login Screen ─────────────────────────────────────────────────────────────
 function LoginScreen({ onLogin }) {
   const [username, setUsername] = useState("");
@@ -14,11 +73,12 @@ function LoginScreen({ onLogin }) {
   const [error,    setError]    = useState("");
   const [loading,  setLoading]  = useState(false);
   const [showPw,   setShowPw]   = useState(false);
+  const [focused,  setFocused]  = useState("");
 
   const handleLogin = async () => {
     if (!username || !password) { setError("Please enter username and password."); return; }
     setLoading(true); setError("");
-    await new Promise(r => setTimeout(r, 800));
+    await new Promise(r => setTimeout(r, 900));
     const user = USERS.find(u => u.username.toLowerCase() === username.toLowerCase() && u.password === password);
     if (user) { onLogin(user); }
     else { setError("Invalid username or password. Please try again."); setLoading(false); }
@@ -26,70 +86,176 @@ function LoginScreen({ onLogin }) {
 
   return (
     <div style={LS.root}>
-      <div style={LS.card}>
-        <div style={LS.logoRow}>
-          <span style={LS.logoIcon}>⚕</span>
-          <div>
-            <div style={LS.logoTitle}>MedNecessity AI</div>
-            <div style={LS.logoSub}>ANS · ABI · ICD-10 · CPT Engine</div>
+      <Particles />
+
+      {/* Left panel — branding */}
+      <div style={LS.leftPanel}>
+        <div style={LS.brandWrap}>
+          <div style={LS.brandLogo}>
+            <WTLogo size={72} />
+          </div>
+          <div style={LS.brandName}>Wellness Tech</div>
+          <div style={LS.brandTagline}>Healthcare Intelligence Platform</div>
+          <div style={LS.brandDivider}/>
+          <div style={LS.featureList}>
+            {[
+              {icon:"🧠", label:"ANS Testing Eligibility"},
+              {icon:"🦵", label:"ABI Vascular Screening"},
+              {icon:"📋", label:"ICD-10 Auto-Mapping"},
+              {icon:"💊", label:"CPT Billing Recommendations"},
+              {icon:"✦",  label:"AI Medical Necessity Letters"},
+              {icon:"🏥", label:"Epic & eCW EMR Import"},
+            ].map(({icon,label}) => (
+              <div key={label} style={LS.featureItem}>
+                <span style={LS.featureIcon}>{icon}</span>
+                <span style={LS.featureLabel}>{label}</span>
+              </div>
+            ))}
           </div>
         </div>
-        <div style={LS.tagline}>Secure Clinical Access Portal</div>
-
-        <div style={LS.form}>
-          <div style={LS.fg}>
-            <label style={LS.lbl}>Username</label>
-            <input style={LS.inp} value={username} onChange={e=>setUsername(e.target.value)}
-              placeholder="Enter your username" autoComplete="username"
-              onKeyDown={e=>e.key==="Enter"&&handleLogin()} />
-          </div>
-          <div style={LS.fg}>
-            <label style={LS.lbl}>Password</label>
-            <div style={{position:"relative"}}>
-              <input style={{...LS.inp,paddingRight:40}} type={showPw?"text":"password"}
-                value={password} onChange={e=>setPassword(e.target.value)}
-                placeholder="Enter your password" autoComplete="current-password"
-                onKeyDown={e=>e.key==="Enter"&&handleLogin()} />
-              <button style={LS.eyeBtn} onClick={()=>setShowPw(!showPw)}>{showPw?"🙈":"👁"}</button>
-            </div>
-          </div>
-          {error && <div style={LS.error}>⚠ {error}</div>}
-          <button style={LS.btn} onClick={handleLogin} disabled={loading}>
-            {loading ? <><span style={{animation:"spin 1s linear infinite",display:"inline-block"}}>◌</span> Signing in…</> : "Sign In →"}
-          </button>
-        </div>
-
-        <div style={LS.footer}>
-          🔒 HIPAA-Compliant Access · Powered by Wellness Tech
+        <div style={LS.brandFooter}>
+          <div style={LS.brandFooterText}>Powered by Wellness Tech USA</div>
+          <div style={LS.brandFooterSub}>wellnesstechusa.com</div>
         </div>
       </div>
+
+      {/* Right panel — login form */}
+      <div style={LS.rightPanel}>
+        <div style={LS.card}>
+          {/* Top logo for mobile */}
+          <div style={LS.mobileLogoRow}>
+            <WTLogo size={40}/>
+            <div>
+              <div style={{fontSize:16,fontWeight:700,color:"#f0f4ff"}}>Wellness Tech</div>
+              <div style={{fontSize:10,color:"#4a5880",textTransform:"uppercase",letterSpacing:".5px"}}>Healthcare Intelligence</div>
+            </div>
+          </div>
+
+          <div style={LS.cardHeader}>
+            <div style={LS.cardTitle}>Welcome Back</div>
+            <div style={LS.cardSub}>Sign in to MedNecessity AI</div>
+          </div>
+
+          <div style={LS.form}>
+            <div style={LS.fg}>
+              <label style={LS.lbl}>Username</label>
+              <div style={{position:"relative"}}>
+                <span style={LS.inputIcon}>👤</span>
+                <input
+                  style={{...LS.inp, paddingLeft:38, ...(focused==="user"?LS.inpFocused:{})}}
+                  value={username} onChange={e=>setUsername(e.target.value)}
+                  placeholder="Enter your username" autoComplete="username"
+                  onFocus={()=>setFocused("user")} onBlur={()=>setFocused("")}
+                  onKeyDown={e=>e.key==="Enter"&&handleLogin()} />
+              </div>
+            </div>
+            <div style={LS.fg}>
+              <label style={LS.lbl}>Password</label>
+              <div style={{position:"relative"}}>
+                <span style={LS.inputIcon}>🔑</span>
+                <input
+                  style={{...LS.inp, paddingLeft:38, paddingRight:44, ...(focused==="pw"?LS.inpFocused:{})}}
+                  type={showPw?"text":"password"}
+                  value={password} onChange={e=>setPassword(e.target.value)}
+                  placeholder="Enter your password" autoComplete="current-password"
+                  onFocus={()=>setFocused("pw")} onBlur={()=>setFocused("")}
+                  onKeyDown={e=>e.key==="Enter"&&handleLogin()} />
+                <button style={LS.eyeBtn} onClick={()=>setShowPw(!showPw)}>
+                  {showPw ? "🙈" : "👁"}
+                </button>
+              </div>
+            </div>
+
+            {error && (
+              <div style={LS.error}>
+                <span>⚠</span> {error}
+              </div>
+            )}
+
+            <button style={{...LS.btn,...(loading?LS.btnLoading:{})}} onClick={handleLogin} disabled={loading}>
+              {loading ? (
+                <><span style={{animation:"spin 1s linear infinite",display:"inline-block",marginRight:8}}>◌</span>Authenticating…</>
+              ) : (
+                <><span>Sign In</span><span style={LS.btnArrow}>→</span></>
+              )}
+            </button>
+          </div>
+
+          <div style={LS.footer}>
+            <div style={LS.footerBadges}>
+              <span style={LS.footerBadge}>🔒 HIPAA Compliant</span>
+              <span style={LS.footerBadge}>🛡 Secure Access</span>
+              <span style={LS.footerBadge}>⚕ Clinical Grade</span>
+            </div>
+            <div style={LS.footerCopy}>© 2025 Wellness Tech USA · All rights reserved</div>
+          </div>
+        </div>
+      </div>
+
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Syne:wght@700;800&display=swap');
         *{box-sizing:border-box;margin:0;padding:0}
-        body{background:#080c14;font-family:'DM Sans',sans-serif}
+        body{background:#020810;font-family:'DM Sans',sans-serif}
         @keyframes spin{to{transform:rotate(360deg)}}
-        @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes fadeLeft{from{opacity:0;transform:translateX(-20px)}to{opacity:1;transform:translateX(0)}}
+        @keyframes floatDot{from{transform:translateY(0) scale(1);opacity:.3}to{transform:translateY(-20px) scale(1.5);opacity:.7}}
+        @keyframes orbPulse{0%,100%{transform:scale(1);opacity:.6}50%{transform:scale(1.2);opacity:1}}
+        @keyframes shimmerLine{0%{background-position:-200px 0}100%{background-position:200px 0}}
+        @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+        @keyframes borderGlow{0%,100%{box-shadow:0 0 0 0 #0ea5e900}50%{box-shadow:0 0 20px 2px #0ea5e922}}
+        @media(max-width:768px){
+          .login-left{display:none!important}
+          .login-right{width:100%!important;max-width:460px!important}
+          .mobile-logo{display:flex!important}
+        }
       `}</style>
     </div>
   );
 }
 
 const LS = {
-  root:     {minHeight:"100vh",background:"#080c14",display:"flex",alignItems:"center",justifyContent:"center",padding:20},
-  card:     {background:"#0d1220",border:"1px solid #1e2840",borderRadius:18,padding:"40px 36px",width:"100%",maxWidth:420,animation:"fadeUp .5s ease"},
-  logoRow:  {display:"flex",alignItems:"center",gap:14,marginBottom:24},
-  logoIcon: {fontSize:40,background:"linear-gradient(135deg,#7c5cfc,#0ea5e9)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"},
-  logoTitle:{fontSize:22,fontWeight:700,color:"#f0f4ff",letterSpacing:"-.3px"},
-  logoSub:  {fontSize:11,color:"#4a5880",textTransform:"uppercase",letterSpacing:".6px",marginTop:2},
-  tagline:  {fontSize:13,color:"#5a6880",marginBottom:28,paddingBottom:28,borderBottom:"1px solid #1e2840"},
-  form:     {display:"flex",flexDirection:"column",gap:16},
-  fg:       {display:"flex",flexDirection:"column",gap:6},
-  lbl:      {fontSize:11,color:"#8899bb",textTransform:"uppercase",letterSpacing:".6px",fontWeight:600},
-  inp:      {background:"#111827",border:"1px solid #1e2840",borderRadius:9,padding:"11px 14px",color:"#e2e8f8",fontSize:14,outline:"none",fontFamily:"inherit",width:"100%"},
-  eyeBtn:   {position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",fontSize:16,padding:4},
-  error:    {background:"#ff6b6b18",border:"1px solid #ff6b6b44",borderRadius:8,padding:"10px 14px",fontSize:13,color:"#ff9a9a"},
-  btn:      {padding:"13px",background:"linear-gradient(135deg,#7c5cfc,#0ea5e9)",border:"none",borderRadius:10,color:"#fff",fontWeight:700,fontSize:15,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginTop:4},
-  footer:   {marginTop:28,paddingTop:20,borderTop:"1px solid #1e2840",fontSize:11,color:"#4a5880",textAlign:"center"},
+  root: {minHeight:"100vh",background:"linear-gradient(135deg,#020810 0%,#050d1a 50%,#020810 100%)",display:"flex",alignItems:"stretch",position:"relative",overflow:"hidden"},
+
+  // Left branding panel
+  leftPanel: {flex:1,display:"flex",flexDirection:"column",justifyContent:"space-between",padding:"48px 52px",borderRight:"1px solid #0ea5e915",background:"linear-gradient(160deg,#0a1628 0%,#050d1a 100%)",className:"login-left"},
+  brandWrap: {animation:"fadeLeft .7s ease"},
+  brandLogo: {marginBottom:20},
+  brandName: {fontFamily:"'Syne',sans-serif",fontSize:36,fontWeight:800,background:"linear-gradient(135deg,#00d4ff,#0ea5e9,#7c5cfc)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",letterSpacing:"-.5px",lineHeight:1.1},
+  brandTagline:{fontSize:14,color:"#4a7a9a",marginTop:6,marginBottom:32,letterSpacing:".3px"},
+  brandDivider:{width:48,height:2,background:"linear-gradient(90deg,#00d4ff,#7c5cfc)",borderRadius:2,marginBottom:32},
+  featureList: {display:"flex",flexDirection:"column",gap:14},
+  featureItem: {display:"flex",alignItems:"center",gap:12},
+  featureIcon: {width:32,height:32,borderRadius:8,background:"linear-gradient(135deg,#0ea5e915,#7c5cfc15)",border:"1px solid #1e3050",display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,flexShrink:0},
+  featureLabel:{fontSize:13,color:"#8899bb",fontWeight:500},
+  brandFooter: {borderTop:"1px solid #0ea5e915",paddingTop:24},
+  brandFooterText:{fontSize:12,color:"#4a6080",fontWeight:600},
+  brandFooterSub: {fontSize:11,color:"#2a4060",marginTop:2},
+
+  // Right form panel
+  rightPanel:{width:480,display:"flex",alignItems:"center",justifyContent:"center",padding:"40px 32px",className:"login-right"},
+  card:      {width:"100%",animation:"fadeUp .6s ease"},
+  mobileLogoRow:{display:"none",alignItems:"center",gap:12,marginBottom:28,paddingBottom:24,borderBottom:"1px solid #1e2840"},
+  cardHeader:{marginBottom:32},
+  cardTitle: {fontFamily:"'Syne',sans-serif",fontSize:28,fontWeight:800,color:"#f0f4ff",letterSpacing:"-.5px"},
+  cardSub:   {fontSize:14,color:"#4a6080",marginTop:6},
+
+  form:      {display:"flex",flexDirection:"column",gap:18},
+  fg:        {display:"flex",flexDirection:"column",gap:7},
+  lbl:       {fontSize:11,color:"#6a88aa",textTransform:"uppercase",letterSpacing:".8px",fontWeight:600},
+  inputIcon: {position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",fontSize:15,opacity:.6,pointerEvents:"none"},
+  inp:       {width:"100%",background:"#0a1628",border:"1px solid #1a3050",borderRadius:11,padding:"13px 14px",color:"#e2e8f8",fontSize:14,outline:"none",fontFamily:"inherit",transition:"all .2s"},
+  inpFocused:{border:"1px solid #0ea5e9",boxShadow:"0 0 0 3px #0ea5e915",background:"#0d1e36"},
+  eyeBtn:    {position:"absolute",right:13,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",fontSize:16,padding:4,opacity:.7},
+  error:     {display:"flex",alignItems:"center",gap:8,background:"#ff6b6b0f",border:"1px solid #ff6b6b33",borderRadius:10,padding:"11px 14px",fontSize:13,color:"#ff9a9a"},
+  btn:       {padding:"14px",background:"linear-gradient(135deg,#0ea5e9,#7c5cfc)",border:"none",borderRadius:11,color:"#fff",fontWeight:700,fontSize:15,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginTop:4,transition:"all .2s",boxShadow:"0 4px 24px #0ea5e930",animation:"borderGlow 3s ease infinite"},
+  btnLoading:{opacity:.8,cursor:"not-allowed"},
+  btnArrow:  {fontSize:18,fontWeight:300,marginLeft:4},
+
+  footer:    {marginTop:28,paddingTop:20,borderTop:"1px solid #0d1e30"},
+  footerBadges:{display:"flex",gap:8,flexWrap:"wrap",marginBottom:12},
+  footerBadge: {fontSize:10,color:"#4a6080",background:"#0a1628",border:"1px solid #1a3050",borderRadius:20,padding:"4px 10px"},
+  footerCopy:  {fontSize:11,color:"#2a4060",textAlign:"center"},
 };
 
 // ─── ICD / CPT Knowledge Base ────────────────────────────────────────────────
