@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 
 // ─── USERS ────────────────────────────────────────────────────────────────────
 const USERS = [
@@ -235,25 +235,61 @@ const INSURANCE_RULES = [
 ];
 // ⚠️ Do NOT bill ANS-ABI with Annual Wellness Visit same day
 
+// ─── STRICT CLINICAL KEYWORDS ────────────────────────────────────────────────
+// These must be DIAGNOSTIC terms — not just risk factors mentioned in passing
+// ANS: only triggers on CLINICAL DIAGNOSIS of autonomic dysfunction
 const ANS_KEYWORDS = [
-  "autonomic","dysautonomia","syncope","orthostatic","hypotension","neuropathy",
-  "diabetic neuropathy","autonomic neuropathy","pots","postural tachycardia",
-  "heart rate variability","hrv","sweating","anhidrosis","hyperhidrosis",
-  "vasovagal","fainting","dizziness","lightheadedness","multiple sclerosis",
-  "parkinson","small fiber","peripheral neuropathy","cardiovagal","adrenergic",
-  "valsalva","tilt table","qsart","diabetes","diabetic","type 1","type 2",
-  "polyneuropathy","complex regional pain","crps","raynaud","g90","e11.4","e10.4",
+  // Definitive autonomic diagnoses
+  "autonomic neuropathy","dysautonomia","orthostatic hypotension",
+  "postural hypotension","postural tachycardia","pots",
+  "syncope","vasovagal syncope","neurocardiogenic syncope",
+  // Specific ANS test findings
+  "heart rate variability","qsart","tilt table","cardiovagal",
+  "anhidrosis","hyperhidrosis",
+  // Specific neuropathy diagnoses (not just "neuropathy" alone)
+  "autonomic","diabetic autonomic","small fiber neuropathy",
+  "peripheral autonomic","complex regional pain syndrome","crps",
+  // ICD patterns in notes
+  "g90","e11.41","e11.42","e10.43","e11.43",
 ];
+// ABI: only triggers on CLINICAL DIAGNOSIS of peripheral arterial disease
 const ABI_KEYWORDS = [
-  "peripheral artery","peripheral vascular","pad","pvd","claudication",
-  "intermittent claudication","rest pain","gangrene","ischemia","limb ischemia",
-  "arterial","atherosclerosis","hypertension","hyperlipidemia","cholesterol",
-  "smoking","tobacco","nicotine","diabetes","diabetic","angiopathy","wound healing",
-  "non-healing wound","ulcer","toe ulcer","foot ulcer","poor circulation",
-  "cold extremity","cold feet","cold legs","absent pulse","weak pulse",
-  "femoral","popliteal","dorsalis pedis","posterior tibial","ankle brachial",
-  "abi","vascular insufficiency","i73","i70","e11.5","e10.5",
+  // Definitive vascular diagnoses
+  "peripheral arterial disease","peripheral artery disease","pad",
+  "peripheral vascular disease","pvd",
+  "intermittent claudication","claudication",
+  "critical limb ischemia","limb ischemia","rest pain",
+  "arterial insufficiency","vascular insufficiency",
+  "atherosclerosis","arteriosclerosis",
+  // Active findings (not just risk factors)
+  "absent pulse","diminished pulse","weak pulse",
+  "ankle brachial index","ankle-brachial","abi test",
+  "non-healing wound","non-healing ulcer","arterial ulcer",
+  "gangrene","dry gangrene","wet gangrene",
+  "poor distal perfusion","poor circulation to",
+  "cold extremit","cold feet","cold legs",
+  "dorsalis pedis","posterior tibial pulse",
+  // ICD patterns in assessment
+  "i73.9","i70.","i71.","i72.","i73.","i74.",
 ];
+
+// Words that NEGATE eligibility when found near a keyword
+const NEGATION_PHRASES = [
+  "no ","denies ","denied ","negative for ","without ","absence of ",
+  "no evidence of ","rules out ","ruled out ","not present","unremarkable",
+  "history of ","hx of ","past history","resolved","no history of"
+];
+
+// Risk factors — these alone do NOT qualify a patient
+// Patient needs ACTIVE DISEASE diagnosis, not just these comorbidities
+const RISK_FACTORS_ONLY = new Set([
+  "I10","E78.5","E78.49","E78.4","E78.00","E11.9","E11.65","E11.69",
+  "E11.8","E66.9","E66.01","Z87.891","Z82.49","K21.9","M54.9",
+  "M19.90","M15.9","M17.11","J44.9","D64.9","E03.9","F17.210",
+  "N18.31","N18.32","N18.4","N18.6","R51.9","R60.0","R73.03",
+  "G89.29","G89.4","I11.9","I12.9","I25.10","I48.11","I48.91",
+  "I50.32","I63.10","I63.49","I63.9","I83.90","I89.0"
+]);
 
 // ─── PARSERS ──────────────────────────────────────────────────────────────────
 function parseCCDA(xmlString) {
@@ -410,9 +446,158 @@ function parseCSVBatch(raw) {
 }
 
 // ─── ELIGIBILITY ENGINE ───────────────────────────────────────────────────────
-function detectEligibility(text) {
-  const lower=text.toLowerCase();
-  return{ansKeywords:ANS_KEYWORDS.filter(kw=>lower.includes(kw)),abiKeywords:ABI_KEYWORDS.filter(kw=>lower.includes(kw))};
+// ─── NEGATION PATTERNS — words that negate a nearby clinical keyword ─────────
+const NEGATION_WORDS = [
+  "denies","denied","deny","no ","not ","normal","negative","nonsmoker",
+  "non-smoker","non smoker","resolved","without","absence of","absent",
+  "unremarkable","intact","within normal","wnl","negative for","rules out",
+  "ruled out","no evidence","no history","no signs","no complaints",
+  "does not","doesn't","never","none","nkda","no known"
+];
+
+// Check if a keyword is negated within a 120-character window around it
+function isNegated(text, keyword) {
+  const lower = text.toLowerCase();
+  let idx = lower.indexOf(keyword.toLowerCase());
+  while (idx !== -1) {
+    // Get surrounding context — 120 chars before and 40 chars after
+    const before = lower.substring(Math.max(0, idx - 120), idx);
+    const after  = lower.substring(idx, Math.min(lower.length, idx + keyword.length + 40));
+    const context = before + after;
+    // Check if any negation word is close to keyword
+    const negated = NEGATION_WORDS.some(neg => {
+      const negIdx = before.lastIndexOf(neg);
+      return negIdx !== -1 && (idx - (before.length - negIdx - neg.length + before.length - before.length)) < 120;
+    });
+    if (!negated) return false; // found at least one non-negated occurrence
+    idx = lower.indexOf(keyword.toLowerCase(), idx + 1);
+  }
+  return true; // all occurrences negated
+}
+
+// ─── ASSESSMENT SECTION EXTRACTOR ────────────────────────────────────────────
+// Only ICD codes in the Assessment/Diagnoses section count for eligibility
+function extractAssessmentCodes(text) {
+  const lower = text.toLowerCase();
+  // Find the assessment/diagnoses section
+  const sectionStarts = ['assessments', 'assessment', 'diagnoses', 'diagnosis', 'problems:'];
+  const sectionEnds   = ['treatment', 'plan:', 'follow up', 'procedure codes', 'visit codes', 'electronically signed'];
+  
+  let start = -1;
+  for (const s of sectionStarts) {
+    const idx = lower.indexOf(s);
+    if (idx !== -1) { start = idx; break; }
+  }
+  if (start === -1) return [];
+  
+  let end = text.length;
+  for (const e of sectionEnds) {
+    const idx = lower.indexOf(e, start);
+    if (idx !== -1 && idx < end) end = idx;
+  }
+  
+  const section = text.substring(start, end);
+  // Extract ICD-10 codes (pattern: letter + digits + optional dot + digits)
+  const icdPattern = /([A-Z]\d{2}(?:\.\d{1,4})?)/g;
+  const codes = [];
+  let match;
+  while ((match = icdPattern.exec(section)) !== null) {
+    codes.push(match[1]);
+  }
+  return [...new Set(codes)];
+}
+
+// ─── STRICT ELIGIBILITY CODES ─────────────────────────────────────────────────
+// These codes in the Assessment = definitive eligibility (no keyword needed)
+const DEFINITIVE_ANS_CODES = new Set([
+  "G90.3","G90.09","G90.50","G90.511","G90.512","G90.513",
+  "G90.521","G90.522","G90.523","G90.59","I95.1","R55","R61","R00.0",
+  "E11.41","E11.42"
+]);
+const DEFINITIVE_ABI_CODES = new Set([
+  "I73.9","I73.00","I73.89","I70.0","I70.201","I70.202","I70.203",
+  "I70.208","I70.211","I70.212","I70.213","I70.218","I70.221","I70.222",
+  "I70.231","I70.232","I70.241","I70.242","I70.261","I70.262","I70.8",
+  "I70.92","I71.33","I71.41","I72.1","I72.4","I72.8","I74.09","I74.2",
+  "I74.3","I74.5","I77.1","E11.51","E11.59","E10.52","E10.59",
+  "E08.52","E09.51","E13.59","I25.85"
+]);
+
+// Risk-factor-only codes — NOT sufficient alone for eligibility
+const RISK_FACTOR_ONLY = new Set([
+  "I10","E78.5","E78.49","E78.4","E66.9","Z87.891","Z82.49",
+  "E11.9","E11.65","E11.69","E11.8","K21.9","M54.9","M19.90",
+  "M15.9","M17.11","M25.561","M25.562","J44.9","D64.9","E03.9",
+  "N18.31","N18.32","N18.4","N18.6","R51.9","R60.0","M79.671"
+]);
+
+function isNegated(text, keyword) {
+  const lower = text.toLowerCase();
+  const idx = lower.indexOf(keyword.toLowerCase());
+  if (idx === -1) return false;
+  // Check 60 chars before the keyword for negation phrases
+  const before = lower.substring(Math.max(0, idx - 60), idx);
+  return NEGATION_PHRASES.some(neg => before.includes(neg));
+}
+
+function detectEligibility(text, problems) {
+  const lower = text.toLowerCase();
+
+  // ── Step 1: Check ICD codes in problem list ──────────────────────────────
+  // Only definitive codes count — risk factors alone do NOT qualify
+  const probCodes = (problems || []).map(p => (p.code || "").trim());
+
+  const definitiveANS = probCodes.filter(c =>
+    DEFINITIVE_ANS_CODES.has(c) ||
+    [...DEFINITIVE_ANS_CODES].some(d => c.startsWith(d.split(".")[0]) && d.split(".")[0].length >= 3)
+  );
+  const definitiveABI = probCodes.filter(c =>
+    DEFINITIVE_ABI_CODES.has(c) ||
+    [...DEFINITIVE_ABI_CODES].some(d => c.startsWith(d.split(".")[0]) && d.split(".")[0].length >= 3)
+  );
+  const hasRiskFactorsOnly = probCodes.length > 0 &&
+    probCodes.every(c => RISK_FACTORS_ONLY.has(c));
+
+  // ── Step 2: Check Assessment/Plan section for ICD codes ──────────────────
+  const assessmentCodes = extractAssessmentCodes(text);
+  const assessmentANS = assessmentCodes.filter(c =>
+    DEFINITIVE_ANS_CODES.has(c) ||
+    [...DEFINITIVE_ANS_CODES].some(d => c.startsWith(d.split(".")[0]))
+  );
+  const assessmentABI = assessmentCodes.filter(c =>
+    DEFINITIVE_ABI_CODES.has(c) ||
+    [...DEFINITIVE_ABI_CODES].some(d => c.startsWith(d.split(".")[0]))
+  );
+
+  // ── Step 3: Keyword matching with negation filter ────────────────────────
+  // Only clinical/diagnostic keywords — not generic risk factors
+  const ansKeywords = ANS_KEYWORDS.filter(kw => {
+    if (!lower.includes(kw.toLowerCase())) return false;
+    return !isNegated(text, kw);
+  });
+  const abiKeywords = ABI_KEYWORDS.filter(kw => {
+    if (!lower.includes(kw.toLowerCase())) return false;
+    return !isNegated(text, kw);
+  });
+
+  // ── Step 4: Eligibility decision ─────────────────────────────────────────
+  // ELIGIBLE only if:
+  // A) Has a DEFINITIVE ICD code in problem list or assessment, OR
+  // B) Has 2+ specific clinical keywords (not negated) AND no risk-factors-only pattern
+  const hasDefinitiveANS = definitiveANS.length > 0 || assessmentANS.length > 0;
+  const hasDefinitiveABI = definitiveABI.length > 0 || assessmentABI.length > 0;
+
+  // NOT eligible if only risk factors present with no vascular disease diagnosis
+  const hasOnlyRiskFactors_ABI = hasRiskFactorsOnly && !hasDefinitiveABI;
+
+  return {
+    ansKeywords, abiKeywords,
+    hasDefinitiveANS, hasDefinitiveABI,
+    hasOnlyRiskFactors_ABI,
+    assessmentCodes,
+    definitiveANSCodes: definitiveANS,
+    definitiveABICodes: definitiveABI,
+  };
 }
 function confidence(keywords) {
   if(keywords.length>=5)return{level:"HIGH",    pct:92,color:"#00d26a"};
@@ -456,27 +641,54 @@ function hasTriggerCode(problems, type) {
   });
 }
 function buildResult(parsed) {
-  const{ansKeywords,abiKeywords}=detectEligibility(parsed.allText||"");
-  const ansConf=confidence(ansKeywords),abiConf=confidence(abiKeywords);
+  const elig = detectEligibility(parsed.allText||"", parsed.problems);
+  const {
+    ansKeywords, abiKeywords,
+    hasDefinitiveANS, hasDefinitiveABI,
+    hasOnlyRiskFactors_ABI, assessmentCodes,
+    definitiveANSCodes, definitiveABICodes
+  } = elig;
 
-  // Also check problem list against validated trigger code sets
-  const ansFromCodes=hasTriggerCode(parsed.problems,"ANS");
-  const abiFromCodes=hasTriggerCode(parsed.problems,"ABI");
+  // ── STRICT ELIGIBILITY RULES ──────────────────────────────────────────────
+  // ANS ELIGIBLE: requires a DEFINITIVE ANS ICD code in chart
+  //   OR 2+ specific clinical ANS keywords (not negated, not just generic terms)
+  const ansEligible = hasDefinitiveANS || ansKeywords.length >= 2;
 
-  // Eligible if keywords found OR validated ICD trigger code present in problem list
-  const ansEligible=ansConf.level!=="NONE"||ansFromCodes;
-  const abiEligible=abiConf.level!=="NONE"||abiFromCodes;
+  // ABI ELIGIBLE: requires a DEFINITIVE ABI/vascular ICD code in chart
+  //   OR 2+ specific clinical ABI keywords
+  //   NEVER from risk factors alone (HTN + hyperlipidemia + tobacco = NOT eligible)
+  const abiEligibleByKeywords = abiKeywords.length >= 2 && !hasOnlyRiskFactors_ABI;
+  const abiEligible = hasDefinitiveABI || abiEligibleByKeywords;
 
-  // Boost confidence if codes matched directly from problem list
-  const finalAnsConf = ansFromCodes && ansConf.level==="NONE" ? {level:"MODERATE",pct:74,color:"#f5a623"} : ansConf;
-  const finalAbiConf = abiFromCodes && abiConf.level==="NONE" ? {level:"MODERATE",pct:74,color:"#f5a623"} : abiConf;
+  // Confidence scoring — ICD code match = HIGH, keywords = based on count
+  const ansConf = hasDefinitiveANS
+    ? {level:"HIGH", pct:95, color:"#00d26a"}
+    : confidence(ansKeywords);
+  const abiConf = hasDefinitiveABI
+    ? {level:"HIGH", pct:95, color:"#00d26a"}
+    : confidence(abiKeywords);
+
+  // Eligibility reason — shown in UI
+  const ansReason = hasDefinitiveANS
+    ? `ICD code match: ${(definitiveANSCodes||[]).join(", ")}`
+    : ansKeywords.length >= 2 ? `Clinical keywords: ${ansKeywords.slice(0,3).join(", ")}`
+    : "No qualifying diagnosis found";
+  const abiReason = hasDefinitiveABI
+    ? `ICD code match: ${(definitiveABICodes||[]).join(", ")}`
+    : abiKeywords.length >= 2 && !hasOnlyRiskFactors_ABI
+      ? `Clinical keywords: ${abiKeywords.slice(0,3).join(", ")}`
+      : hasOnlyRiskFactors_ABI
+        ? "Risk factors only (HTN/hyperlipidemia/tobacco) — no active vascular disease documented"
+        : "No qualifying diagnosis found";
 
   return{
     ...parsed,
     ansEligible, abiEligible,
-    ansConf:finalAnsConf, abiConf:finalAbiConf,
+    ansConf, abiConf,
     ansKeywords, abiKeywords,
-    ansFromCodes, abiFromCodes,
+    ansReason, abiReason,
+    hasDefinitiveANS, hasDefinitiveABI,
+    assessmentCodes,
     ansICD:matchICD(parsed.problems,parsed.allText,"ANS").slice(0,8),
     abiICD:matchICD(parsed.problems,parsed.allText,"ABI").slice(0,8),
     ansCPT:ANS_CPT_CODES, abiCPT:ABI_CPT_CODES,
@@ -519,7 +731,19 @@ function MainApp({user,onLogout}) {
   const[result,setResult]=useState(null);
   const[aiInsight,setAiInsight]=useState("");
   const[aiLoading,setAiLoading]=useState(false);
-  const[queue,setQueue]=useState([]);
+  // ─── Persistent queue — survives browser close ───────────────────────────────
+  const[queue,setQueue]=useState(()=>{
+    try {
+      const saved = localStorage.getItem('mn_queue_v1');
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
+
+  // Auto-save queue to localStorage whenever it changes
+  useEffect(()=>{
+    try { localStorage.setItem('mn_queue_v1', JSON.stringify(queue.slice(0,500))); }
+    catch(e) { console.warn('Storage full:', e); }
+  }, [queue]);
   const[batchList,setBatchList]=useState([]);
   const[importLog,setImportLog]=useState(null);
   const[batchRunning,setBatchRunning]=useState(false);
@@ -566,6 +790,7 @@ function MainApp({user,onLogout}) {
   };
 
   const clearAll=()=>{setEmrText("");setResult(null);setAiInsight("");setImportLog(null);setPatientName("");setPatientDOB("");setVisitDate("");setProvider("");setBatchList([]);};
+  const clearQueue=()=>{setQueue([]);try{localStorage.removeItem('mn_queue_v1');}catch{}};
 
   return(
     <div style={S.root}>
@@ -599,7 +824,7 @@ function MainApp({user,onLogout}) {
       </header>
 
       {/* DASHBOARD PAGE */}
-      {page==="dashboard"&&<DashboardPage queue={queue} onSelect={(p)=>{setResult(p);setAiInsight("");setPage("engine");}}/>}
+      {page==="dashboard"&&<DashboardPage queue={queue} onSelect={(p)=>{setResult(p);setAiInsight("");setPage("engine");}} onClearQueue={clearQueue}/>}
 
       {/* BILLING RULES PAGE */}
       {page==="billing"&&<BillingRulesPage/>}
@@ -762,7 +987,7 @@ function MainApp({user,onLogout}) {
 }
 
 // ─── DASHBOARD PAGE ───────────────────────────────────────────────────────────
-function DashboardPage({queue,onSelect}) {
+function DashboardPage({queue,onSelect,onClearQueue}) {
   const ans=queue.filter(p=>p.ansEligible).length;
   const abi=queue.filter(p=>p.abiEligible).length;
   const both=queue.filter(p=>p.ansEligible&&p.abiEligible).length;
@@ -770,13 +995,26 @@ function DashboardPage({queue,onSelect}) {
   const high=queue.filter(p=>p.ansConf?.level==="HIGH"||p.abiConf?.level==="HIGH").length;
   return(
     <div style={{padding:20,overflowY:"auto",height:"calc(100vh - 57px)",paddingBottom:80}}>
-      <div style={{fontSize:18,fontWeight:700,color:"#f0f4ff",marginBottom:4}}>📊 Practice Dashboard</div>
-      <div style={{fontSize:12,color:"#4a5880",marginBottom:20}}>{queue.length} patients analyzed this session</div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:4,flexWrap:"wrap",gap:8}}>
+        <div>
+          <div style={{fontSize:18,fontWeight:700,color:"#f0f4ff"}}>📊 Practice Dashboard</div>
+          <div style={{fontSize:12,color:"#4a5880",marginTop:2}}>{queue.length} patients saved · <span style={{color:"#00d26a"}}>💾 Auto-saved to this device</span></div>
+        </div>
+        {queue.length>0&&(
+          <button onClick={()=>{if(window.confirm("Clear all "+queue.length+" patients from dashboard? This cannot be undone."))onClearQueue();}}
+            style={{padding:"6px 14px",background:"#ff6b6b18",border:"1px solid #ff6b6b44",borderRadius:8,color:"#ff6b6b",cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:600}}>
+            🗑 Clear All
+          </button>
+        )}
+      </div>
+      <div style={{background:"#0a1628",border:"1px solid #00d26a22",borderRadius:8,padding:"8px 12px",marginBottom:16,fontSize:11,color:"#4a7a5a"}}>
+        ✓ Results are automatically saved to this browser. They will be here next time you open the app on this device.
+      </div>
       {queue.length===0?(
         <div style={{textAlign:"center",padding:"60px 20px",color:"#4a5880"}}>
           <div style={{fontSize:48,marginBottom:12}}>📊</div>
-          <div style={{fontSize:16,fontWeight:600,color:"#8899bb",marginBottom:6}}>No data yet</div>
-          <div style={{fontSize:13}}>Run eligibility analysis on patients to see your dashboard.</div>
+          <div style={{fontSize:16,fontWeight:600,color:"#8899bb",marginBottom:6}}>No patients saved yet</div>
+          <div style={{fontSize:13}}>Run eligibility analysis — results auto-save here permanently.</div>
         </div>
       ):<>
         {/* Stats row */}
@@ -886,7 +1124,21 @@ function ResultPanel({rec,aiInsight,aiLoading,onTXT,onCSV,onClear}) {
           <div style={{fontSize:11,color:"#5a6880",marginTop:2}}>DOB: {rec.patientDOB||"—"} · MRN: {rec.mrn||"—"} · Visit: {rec.visitDate||"—"} · {rec.provider||"—"}<span style={S.srcBadge}>{rec.source}</span></div>
         </div>
         <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-          {["ANS","ABI"].map(t=>{const eligible=rec[`${t.toLowerCase()}Eligible`];const conf=rec[`${t.toLowerCase()}Conf`];return(<div key={t} style={{display:"flex",alignItems:"center",gap:5,padding:"7px 12px",borderRadius:9,fontSize:12,fontWeight:600,...(eligible?{background:"#00d26a18",border:"1px solid #00d26a44",color:"#00d26a"}:{background:"#ff6b6b18",border:"1px solid #ff6b6b44",color:"#ff6b6b"})}}>{eligible?"✓":"✗"} {t} Eligible<span style={{fontSize:10,opacity:.8,background:"rgba(0,0,0,.25)",padding:"1px 5px",borderRadius:4}}>{conf.level}</span></div>);})}
+          {["ANS","ABI"].map(t=>{
+            const eligible=rec[`${t.toLowerCase()}Eligible`];
+            const conf=rec[`${t.toLowerCase()}Conf`];
+            const reason=rec[`${t.toLowerCase()}Reason`]||"";
+            return(
+              <div key={t} style={{display:"flex",flexDirection:"column",gap:3,padding:"8px 12px",borderRadius:9,border:"1px solid",minWidth:160,...(eligible?{background:"#00d26a18",borderColor:"#00d26a44"}:{background:"#ff6b6b18",borderColor:"#ff6b6b44"})}}>
+                <div style={{display:"flex",alignItems:"center",gap:5}}>
+                  <span style={{fontSize:14,fontWeight:700,color:eligible?"#00d26a":"#ff6b6b"}}>{eligible?"✓":"✗"}</span>
+                  <span style={{fontSize:12,fontWeight:700,color:eligible?"#00d26a":"#ff6b6b"}}>{t} {eligible?"Eligible":"Not Eligible"}</span>
+                  <span style={{fontSize:9,opacity:.8,background:"rgba(0,0,0,.25)",padding:"1px 5px",borderRadius:4,color:eligible?"#00d26a":"#ff6b6b"}}>{conf.level}</span>
+                </div>
+                <div style={{fontSize:10,color:eligible?"#4a7a5a":"#8a4a4a",lineHeight:1.4}}>{reason}</div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
