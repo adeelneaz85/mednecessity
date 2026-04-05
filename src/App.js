@@ -379,11 +379,11 @@ function extractPatientName(text) {
   return m ? m[1].trim() : "";
 }
 function extractDOB(text) {
-  const m = text.match(/(?:dob|date of birth|born)\s*:?\s*(\d{1,2}[/\-]\d{1,2}[/\-]\d{2,4})/i);
+  const m = text.match(/(?:dob|date of birth|born)\s*:?\s*(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})/i);
   return m ? m[1].trim() : "";
 }
 function extractDate(text) {
-  const m = text.match(/(?:date|visit|appointment|appt)\s*:?\s*(\d{1,2}[/\-]\d{1,2}[/\-]\d{2,4})/i);
+  const m = text.match(/(?:date|visit|appointment|appt)\s*:?\s*(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})/i);
   return m ? m[1].trim() : "";
 }
 function extractProvider(text) {
