@@ -129,37 +129,88 @@ const LS = {
   footerCopy:{fontSize:11,color:"#2a4060",textAlign:"center"},
 };
 
-// ─── CORRECTED CPT CODES (from Wellness Tech Billing Protocol) ───────────────
+// ─── ICD CODES — From Wellness Tech Combination Codes Excel (944 validated combinations) ──
 const ANS_ICD_CODES = [
-  { code:"G90.3",  description:"Multi-System Autonomic Failure" },
-  { code:"G90.09", description:"Other Idiopathic Peripheral Autonomic Neuropathy" },
-  { code:"G90.1",  description:"Familial Dysautonomia [Riley-Day]" },
-  { code:"G90.50", description:"Complex Regional Pain Syndrome" },
-  { code:"G90.8",  description:"Other Disorders of Autonomic Nervous System" },
-  { code:"G90.9",  description:"Disorder of Autonomic Nervous System, Unspecified" },
-  { code:"R55",    description:"Syncope and Collapse" },
-  { code:"I95.1",  description:"Orthostatic Hypotension" },
-  { code:"G62.9",  description:"Polyneuropathy, Unspecified" },
-  { code:"E11.40", description:"Type 2 Diabetes with Diabetic Neuropathy" },
-  { code:"E11.43", description:"Type 2 Diabetes with Diabetic Autonomic Neuropathy" },
-  { code:"E10.43", description:"Type 1 Diabetes with Diabetic Autonomic Neuropathy" },
-  { code:"G35",    description:"Multiple Sclerosis" },
-  { code:"G23.9",  description:"Parkinson's Disease (ANS involvement)" },
+  { code:"G90.3",   description:"Multi-System Autonomic Failure" },
+  { code:"G90.09",  description:"Other Idiopathic Peripheral Autonomic Neuropathy" },
+  { code:"G90.50",  description:"Complex Regional Pain Syndrome, Unspecified" },
+  { code:"G90.511", description:"Complex Regional Pain Syndrome I, Right Upper Limb" },
+  { code:"G90.512", description:"Complex Regional Pain Syndrome I, Left Upper Limb" },
+  { code:"G90.513", description:"Complex Regional Pain Syndrome I, Upper Limb Bilateral" },
+  { code:"G90.521", description:"Complex Regional Pain Syndrome I, Right Lower Limb" },
+  { code:"G90.522", description:"Complex Regional Pain Syndrome I, Left Lower Limb" },
+  { code:"G90.523", description:"Complex Regional Pain Syndrome I, Lower Limb Bilateral" },
+  { code:"G90.59",  description:"Complex Regional Pain Syndrome I, Other Specified Site" },
+  { code:"I95.1",   description:"Orthostatic Hypotension" },
+  { code:"R55",     description:"Syncope and Collapse" },
+  { code:"R61",     description:"Generalized Hyperhidrosis (Autonomic Dysfunction)" },
+  { code:"R00.0",   description:"Tachycardia, Unspecified (Autonomic Dysfunction)" },
+  { code:"E11.41",  description:"Type 2 Diabetes with Diabetic Mononeuropathy" },
+  { code:"E11.42",  description:"Type 2 Diabetes with Diabetic Polyneuropathy" },
 ];
 const ABI_ICD_CODES = [
   { code:"I73.9",   description:"Peripheral Vascular Disease, Unspecified" },
-  { code:"I70.209", description:"Atherosclerosis of Native Arteries, Unspecified Extremity" },
-  { code:"I70.219", description:"Atherosclerosis — Intermittent Claudication" },
-  { code:"I70.229", description:"Atherosclerosis — Rest Pain" },
-  { code:"I70.249", description:"Atherosclerosis with Gangrene" },
-  { code:"I74.9",   description:"Embolism / Thrombosis of Arteries" },
-  { code:"R02",     description:"Gangrene (Not Elsewhere Classified)" },
+  { code:"I73.00",  description:"Raynaud's Syndrome without Gangrene" },
+  { code:"I73.89",  description:"Other Specified Peripheral Vascular Diseases" },
+  { code:"I70.0",   description:"Atherosclerosis of Aorta" },
+  { code:"I70.201", description:"Atherosclerosis of Native Arteries, Right Leg" },
+  { code:"I70.202", description:"Atherosclerosis of Native Arteries, Left Leg" },
+  { code:"I70.203", description:"Atherosclerosis of Native Arteries, Bilateral Legs" },
+  { code:"I70.208", description:"Atherosclerosis of Native Arteries, Other Extremity" },
+  { code:"I70.211", description:"Atherosclerosis with Intermittent Claudication, Right Leg" },
+  { code:"I70.212", description:"Atherosclerosis with Intermittent Claudication, Left Leg" },
+  { code:"I70.213", description:"Atherosclerosis with Intermittent Claudication, Bilateral" },
+  { code:"I70.221", description:"Atherosclerosis with Rest Pain, Right Leg" },
+  { code:"I70.222", description:"Atherosclerosis with Rest Pain, Left Leg" },
+  { code:"I70.231", description:"Atherosclerosis with Ulceration, Right Leg" },
+  { code:"I70.232", description:"Atherosclerosis with Ulceration, Left Leg" },
+  { code:"I70.241", description:"Atherosclerosis with Gangrene, Right Leg" },
+  { code:"I70.242", description:"Atherosclerosis with Gangrene, Left Leg" },
+  { code:"I70.8",   description:"Atherosclerosis of Other Arteries" },
+  { code:"I70.92",  description:"Chronic Total Occlusion of Artery of Extremity" },
+  { code:"I71.33",  description:"Abdominal Aortic Aneurysm, Ruptured" },
+  { code:"I71.41",  description:"Abdominal Aortic Aneurysm, without Rupture" },
+  { code:"I72.1",   description:"Aneurysm of Renal Artery" },
+  { code:"I72.4",   description:"Aneurysm of Artery of Lower Extremity" },
+  { code:"I72.8",   description:"Aneurysm of Other Specified Arteries" },
+  { code:"I74.09",  description:"Embolism and Thrombosis of Abdominal Aorta" },
+  { code:"I74.2",   description:"Embolism and Thrombosis of Arteries of Upper Extremity" },
+  { code:"I74.3",   description:"Embolism and Thrombosis of Arteries of Lower Extremity" },
+  { code:"I74.5",   description:"Embolism and Thrombosis of Iliac Artery" },
+  { code:"I77.1",   description:"Stricture of Artery" },
+  { code:"I25.85",  description:"Coronary Artery Disease — Chronic Coronary Syndrome" },
   { code:"E11.51",  description:"Type 2 Diabetes with Diabetic Peripheral Angiopathy" },
-  { code:"E10.51",  description:"Type 1 Diabetes with Diabetic Peripheral Angiopathy" },
-  { code:"I10",     description:"Essential Hypertension (ABI screening)" },
-  { code:"E78.5",   description:"Hyperlipidemia (ABI screening)" },
-  { code:"Z87.891", description:"Personal History of Nicotine Dependence (PAD risk)" },
+  { code:"E11.59",  description:"Type 2 Diabetes with Other Circulatory Complications" },
+  { code:"E10.52",  description:"Type 1 Diabetes with Diabetic Peripheral Angiopathy" },
+  { code:"E10.59",  description:"Type 1 Diabetes with Other Circulatory Complications" },
+  { code:"E08.52",  description:"Drug/Chemical Diabetes with Diabetic Peripheral Angiopathy" },
+  { code:"E09.51",  description:"Drug-Induced Diabetes with Diabetic Peripheral Angiopathy" },
+  { code:"E13.59",  description:"Other Diabetes with Other Circulatory Complications" },
 ];
+
+// Validated trigger code sets from 944 combination codes (Excel import)
+const ANS_TRIGGER_CODES = new Set([
+  "E11.41","E11.42","E66.9","E78.5","G90.09","G90.3","G90.50",
+  "G90.511","G90.512","G90.513","G90.521","G90.522","G90.523","G90.59",
+  "I10","I95.1","R00.0","R42","R55","R61"
+]);
+const ABI_TRIGGER_CODES = new Set([
+  "D64.9","E03.9","E08.52","E09.51","E10.52","E10.59","E11.22","E11.29",
+  "E11.49","E11.51","E11.59","E11.65","E11.69","E11.8","E11.9","E13.59",
+  "E13.9","E55.9","E66.01","E66.8","E66.9","E78.4","E78.49","E78.5",
+  "F17.210","G45.8","G45.9","I10","I11.9","I12.9","I25.10","I25.85",
+  "I48.11","I48.91","I50.32","I63.10","I63.49","I63.9","I65.22",
+  "I70.0","I70.201","I70.202","I70.203","I70.208","I70.211","I70.212",
+  "I70.213","I70.218","I70.221","I70.222","I70.231","I70.232","I70.241",
+  "I70.242","I70.261","I70.262","I70.263","I70.268","I70.301","I70.401",
+  "I70.411","I70.412","I70.421","I70.431","I70.461","I70.501","I70.511",
+  "I70.521","I70.523","I70.531","I70.561","I70.601","I70.612","I70.691",
+  "I70.791","I70.8","I70.92","I71.33","I71.41","I72.1","I72.4","I72.8",
+  "I73.00","I73.89","I73.9","I74.09","I74.2","I74.3","I74.5","I77.1",
+  "I83.90","I89.0","I96","K21.9","M15.9","M17.11","M19.90","M25.561",
+  "M25.562","M54.9","N18.31","N18.32","N18.4","N18.6","R09.89","R20.0",
+  "R26.81","R26.9","R51.9","R60.0","R73.03","Z48.812"
+]);
 
 // ✅ CORRECTED from Wellness Tech Billing Protocol Sheet
 const ANS_CPT_CODES = [
@@ -239,47 +290,85 @@ function parseHL7(raw) {
 }
 
 // ✅ FIXED: Smart file parser — handles Word docs, PDFs, any text file, single vs batch
+function isRealCSV(raw, ext) {
+  // Only treat as CSV if:
+  // 1. File extension is .csv, AND
+  // 2. First line looks like a proper header row (short fields, no special chars), AND
+  // 3. All rows have a consistent number of comma-separated columns (3+), AND
+  // 4. Does NOT contain clinical note patterns (special chars, long narrative sentences)
+  if (ext !== "csv") return false;
+
+  const lines = raw.trim().split(/\r?\n/).filter(l => l.trim());
+  if (lines.length < 3) return false; // need at least header + 2 data rows
+
+  // Check for special characters common in Word docs — disqualify immediately
+  if (/[◆•●■▪►◄→←↑↓★☆♦♣♠♥]/.test(raw)) return false;
+
+  // First line must look like a header: short comma-separated values, no long sentences
+  const firstLine = lines[0];
+  const cols = firstLine.split(",");
+  if (cols.length < 3) return false; // need at least 3 columns
+  if (cols.some(c => c.trim().split(" ").length > 4)) return false; // headers shouldn't be long sentences
+
+  // All rows should have a consistent column count close to the header
+  const headerCount = cols.length;
+  const consistent = lines.slice(1, 6).every(l => {
+    const c = l.split(",").length;
+    return Math.abs(c - headerCount) <= 2; // allow slight variation
+  });
+  if (!consistent) return false;
+
+  // Must have a patient/name/dob-like header
+  const headerLower = firstLine.toLowerCase();
+  const hasPatientHeader = headerLower.includes("patient") || headerLower.includes("name") ||
+                           headerLower.includes("dob") || headerLower.includes("mrn") ||
+                           headerLower.includes("appt") || headerLower.includes("visit");
+  return hasPatientHeader;
+}
+
 function parseAnyFile(raw, filename) {
-  const ext = (filename||"").split(".").pop().toLowerCase();
+  const ext = (filename || "").split(".").pop().toLowerCase();
 
-  // Try CCD/CCDA XML first
-  if(raw.trim().startsWith("<?xml")||raw.includes("ClinicalDocument")){
-    const p=parseCCDA(raw); if(p) return {type:"single",data:p};
-  }
-  // Try HL7
-  if(raw.startsWith("MSH|")){
-    const p=parseHL7(raw); if(p) return {type:"single",data:p};
-  }
+  // Strip special Word/PDF characters that corrupt plain text
+  const cleaned = raw.replace(/[◆•●■▪►◄→←↑↓★☆♦♣♠♥\u25C6\u2022\u25CF\u25A0\uFFFD]/g, " ")
+                     .replace(/\r\n/g, "\n");
 
-  // CSV — check if it looks like a schedule/batch (multiple rows with headers)
-  if(ext==="csv"||raw.includes(",")) {
-    const lines=raw.trim().split(/\r?\n/);
-    if(lines.length>2) {
-      const headers=lines[0].toLowerCase();
-      const isBatch=headers.includes("patient")||headers.includes("name")||headers.includes("dob")||headers.includes("mrn");
-      if(isBatch) {
-        const patients=parseCSVBatch(raw);
-        if(patients&&patients.length>1) return {type:"batch",data:patients};
-      }
-    }
+  // 1. Try CCD/CCDA XML
+  if (cleaned.trim().startsWith("<?xml") || cleaned.includes("ClinicalDocument")) {
+    const p = parseCCDA(cleaned);
+    if (p) return { type: "single", data: p };
   }
 
-  // Everything else (Word doc text, PDF text, plain notes) — treat as single patient chart note
-  // Extract patient name from first line if possible
-  const firstLine = raw.split(/\r?\n/).find(l=>l.trim().length>3)||"";
+  // 2. Try HL7 v2
+  if (cleaned.startsWith("MSH|")) {
+    const p = parseHL7(cleaned);
+    if (p) return { type: "single", data: p };
+  }
+
+  // 3. Only treat as CSV batch if it passes strict validation
+  if (isRealCSV(raw, ext)) {
+    const patients = parseCSVBatch(raw);
+    if (patients && patients.length > 1) return { type: "batch", data: patients };
+  }
+
+  // 4. Everything else = single patient chart note (Word doc, PDF, TXT, progress note)
+  const sourceLabel = ext === "docx" || ext === "doc" ? "Word Document"
+                    : ext === "pdf"                   ? "PDF Export"
+                    : ext === "csv"                   ? "Text File (CSV)"
+                    : ext === "txt"                   ? "Text File"
+                    : "Uploaded File";
+
   return {
-    type:"single",
-    data:{
-      patientName: extractPatientName(raw) || "",
-      patientDOB:  extractDOB(raw) || "",
-      visitDate:   extractDate(raw) || "",
-      provider:    extractProvider(raw) || "",
-      mrn:         extractMRN(raw) || "",
-      problems:[], medications:[], allergies:[], vitals:{},
-      allText: raw,
-      source: ext==="docx"||ext==="doc" ? "Word Document" :
-              ext==="pdf" ? "PDF Export" :
-              ext==="txt" ? "Text File" : "Uploaded File",
+    type: "single",
+    data: {
+      patientName: extractPatientName(cleaned) || "",
+      patientDOB:  extractDOB(cleaned)         || "",
+      visitDate:   extractDate(cleaned)         || "",
+      provider:    extractProvider(cleaned)     || "",
+      mrn:         extractMRN(cleaned)          || "",
+      problems: [], medications: [], allergies: [], vitals: {},
+      allText: cleaned,
+      source: sourceLabel,
     }
   };
 }
@@ -332,15 +421,67 @@ function confidence(keywords) {
   return                      {level:"NONE",    pct:0, color:"#555"   };
 }
 function matchICD(problems,text,type) {
-  const lower=text.toLowerCase();const pool=type==="ANS"?ANS_ICD_CODES:ABI_ICD_CODES;
-  const fromDoc=(problems||[]).filter(p=>pool.some(c=>c.code.startsWith(p.code.split(".")[0]))).map(p=>({code:p.code,description:p.display||pool.find(c=>c.code===p.code)?.description||p.code}));
-  const fromKW=pool.filter(c=>lower.includes(c.code.toLowerCase())||c.description.toLowerCase().split(" ").some(w=>w.length>3&&lower.includes(w)));
-  return[...new Map([...fromDoc,...fromKW].map(c=>[c.code,c])).values()].slice(0,6);
+  const lower=text.toLowerCase();
+  const pool=type==="ANS"?ANS_ICD_CODES:ABI_ICD_CODES;
+  const triggerSet=type==="ANS"?ANS_TRIGGER_CODES:ABI_TRIGGER_CODES;
+
+  // 1. From EMR problem list — direct ICD code match
+  const fromDoc=(problems||[])
+    .filter(p=>{
+      const pCode=(p.code||"").trim();
+      return pool.some(c=>c.code===pCode||c.code.startsWith(pCode.split(".")[0])) || triggerSet.has(pCode);
+    })
+    .map(p=>({
+      code:p.code,
+      description:p.display||pool.find(c=>c.code===p.code)?.description||p.code
+    }));
+
+  // 2. From trigger codes found in text (ICD codes mentioned in notes)
+  const fromTrigger=pool.filter(c=>lower.includes(c.code.toLowerCase()));
+
+  // 3. From keyword matching in description
+  const fromKW=pool.filter(c=>
+    c.description.toLowerCase().split(" ").some(w=>w.length>4&&lower.includes(w))
+  );
+
+  return[...new Map([...fromDoc,...fromTrigger,...fromKW].map(c=>[c.code,c])).values()].slice(0,8);
+}
+
+// Check if ANY trigger code from the validated combo set appears in the problem list
+function hasTriggerCode(problems, type) {
+  const triggerSet = type==="ANS" ? ANS_TRIGGER_CODES : ABI_TRIGGER_CODES;
+  return (problems||[]).some(p => {
+    const code = (p.code||"").trim();
+    return triggerSet.has(code) || [...triggerSet].some(t => code.startsWith(t.split(".")[0]) && t.split(".")[0].length >= 3);
+  });
 }
 function buildResult(parsed) {
   const{ansKeywords,abiKeywords}=detectEligibility(parsed.allText||"");
   const ansConf=confidence(ansKeywords),abiConf=confidence(abiKeywords);
-  return{...parsed,ansEligible:ansConf.level!=="NONE",abiEligible:abiConf.level!=="NONE",ansConf,abiConf,ansKeywords,abiKeywords,ansICD:matchICD(parsed.problems,parsed.allText,"ANS").slice(0,6),abiICD:matchICD(parsed.problems,parsed.allText,"ABI").slice(0,6),ansCPT:ANS_CPT_CODES,abiCPT:ABI_CPT_CODES,timestamp:new Date().toISOString()};
+
+  // Also check problem list against validated trigger code sets
+  const ansFromCodes=hasTriggerCode(parsed.problems,"ANS");
+  const abiFromCodes=hasTriggerCode(parsed.problems,"ABI");
+
+  // Eligible if keywords found OR validated ICD trigger code present in problem list
+  const ansEligible=ansConf.level!=="NONE"||ansFromCodes;
+  const abiEligible=abiConf.level!=="NONE"||abiFromCodes;
+
+  // Boost confidence if codes matched directly from problem list
+  const finalAnsConf = ansFromCodes && ansConf.level==="NONE" ? {level:"MODERATE",pct:74,color:"#f5a623"} : ansConf;
+  const finalAbiConf = abiFromCodes && abiConf.level==="NONE" ? {level:"MODERATE",pct:74,color:"#f5a623"} : abiConf;
+
+  return{
+    ...parsed,
+    ansEligible, abiEligible,
+    ansConf:finalAnsConf, abiConf:finalAbiConf,
+    ansKeywords, abiKeywords,
+    ansFromCodes, abiFromCodes,
+    ansICD:matchICD(parsed.problems,parsed.allText,"ANS").slice(0,8),
+    abiICD:matchICD(parsed.problems,parsed.allText,"ABI").slice(0,8),
+    ansCPT:ANS_CPT_CODES, abiCPT:ABI_CPT_CODES,
+    timestamp:new Date().toISOString()
+  };
 }
 async function getAIInsight(rec) {
   try {
