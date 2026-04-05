@@ -763,10 +763,50 @@ function MainApp({user,onLogout}) {
 
   const handleImport=(e)=>{
     const file=e.target.files[0];if(!file)return;
-    const reader=new FileReader();
-    reader.onload=(ev)=>{
-      const raw=ev.target.result;
-      const parsed=parseAnyFile(raw,file.name);
+    const ext=(file.name||"").split(".").pop().toLowerCase();
+    const MAX_TEXT_SIZE=2*1024*1024; // 2MB text limit
+    const MAX_PDF_SIZE=10*1024*1024; // 10MB PDF limit
+
+    // File size guard
+    if(file.size>MAX_PDF_SIZE){
+      alert(`File too large (${(file.size/1024/1024).toFixed(1)}MB). Maximum is 10MB.\n\nTip: Copy-paste the Assessment & Plan section directly from eCW into the Chart Note tab — it works better and faster.`);
+      e.target.value=""; return;
+    }
+
+    const processText=(raw)=>{
+      // For very large text files, truncate intelligently
+      let text=raw;
+      if(raw.length>MAX_TEXT_SIZE){
+        // Try to find and keep the most clinically relevant sections
+        const lower=raw.toLowerCase();
+        const sections=["assessment","plan","diagnosis","impression","problem list","chief complaint","history of present illness","physical exam","review of systems"];
+        let extracted="";
+        for(const s of sections){
+          const idx=lower.indexOf(s);
+          if(idx!==-1){
+            // Extract up to 50000 chars from each section
+            extracted+=raw.substring(idx,Math.min(idx+50000,raw.length))+"
+
+";
+          }
+        }
+        // If we found sections, use them; otherwise take first+last portions
+        if(extracted.length>500){
+          text=extracted.substring(0,MAX_TEXT_SIZE);
+        } else {
+          // Take first 800KB + last 400KB to catch assessment/plan at end
+          const firstPart=raw.substring(0,800*1024);
+          const lastPart=raw.substring(Math.max(0,raw.length-400*1024));
+          text=firstPart+"
+
+[...middle section omitted for size...]
+
+"+lastPart;
+        }
+        console.log(`Large file truncated from ${(raw.length/1024).toFixed(0)}KB to ${(text.length/1024).toFixed(0)}KB`);
+      }
+
+      const parsed=parseAnyFile(text,file.name);
       if(parsed.type==="batch"){
         setBatchList(parsed.data);setImportLog({type:"batch",source:"CSV Batch",count:parsed.data.length});setInputTab("batch");
       } else {
@@ -776,12 +816,92 @@ function MainApp({user,onLogout}) {
         if(p.visitDate)setVisitDate(p.visitDate);
         if(p.provider)setProvider(p.provider);
         setEmrText(p.allText);
-        setImportLog({type:"success",source:p.source,name:p.patientName||"(name not detected)",dob:p.patientDOB||"",mrn:p.mrn||"",problems:(p.problems||[]).length,meds:(p.medications||[]).length,vitals:Object.keys(p.vitals||{}).length});
+        setImportLog({
+          type:"success",source:p.source,
+          name:p.patientName||"(name not detected)",
+          dob:p.patientDOB||"",mrn:p.mrn||"",
+          problems:(p.problems||[]).length,
+          meds:(p.medications||[]).length,
+          vitals:Object.keys(p.vitals||{}).length,
+          fileSize:`${(file.size/1024).toFixed(0)}KB`
+        });
         setInputTab("emr");
       }
     };
-    reader.readAsText(file);e.target.value="";
+
+    // Handle PDF — extract text from PDF using URL/blob approach
+    if(ext==="pdf"){
+      setImportLog({type:"loading",source:"PDF",name:"Reading PDF..."});
+      const reader=new FileReader();
+      reader.onload=(ev)=>{
+        try{
+          // PDFs from eCW are typically text-based — try reading as text first
+          const raw=ev.target.result;
+          // Extract readable text from PDF binary (handles text-based PDFs)
+          const textContent=extractPDFText(raw);
+          if(textContent&&textContent.length>100){
+            processText(textContent);
+          } else {
+            // Image-based PDF — can't extract text
+            setImportLog({type:"plain",source:"PDF (image-based)"});
+            setEmrText("");
+            alert("This PDF appears to be image-based and text cannot be extracted automatically.\n\nPlease:\n1. Open the PDF\n2. Select all text (Ctrl+A)\n3. Copy (Ctrl+C)\n4. Paste into the Chart Note tab");
+            setInputTab("emr");
+          }
+        } catch(err){
+          console.error("PDF read error:",err);
+          alert("Could not read PDF. Please copy-paste the note text directly from eCW.");
+        }
+      };
+      reader.readAsBinaryString(file);
+    } else {
+      // All other files — read as text
+      const reader=new FileReader();
+      reader.onload=(ev)=>processText(ev.target.result);
+      reader.readAsText(file);
+    }
+    e.target.value="";
   };
+
+  // Extract readable text from a text-based PDF binary
+  function extractPDFText(binary){
+    try{
+      // Extract text between BT (begin text) and ET (end text) markers
+      const texts=[];
+      let i=0;
+      while(i<binary.length){
+        const btIdx=binary.indexOf("BT",i);
+        if(btIdx===-1)break;
+        const etIdx=binary.indexOf("ET",btIdx);
+        if(etIdx===-1)break;
+        const block=binary.substring(btIdx,etIdx);
+        // Extract strings in parentheses: (text)
+        const matches=block.match(/\(([^)]{1,500})\)/g)||[];
+        for(const m of matches){
+          const text=m.slice(1,-1)
+            .replace(/\n/g,"
+").replace(/\r/g,"").replace(/\t/g," ")
+            .replace(/\\/g,"\").replace(/\(/g,"(").replace(/\)/g,")")
+            .replace(/[^ -~
+]/g," ").trim();
+          if(text.length>1)texts.push(text);
+        }
+        // Also extract hex strings: <hex>
+        const hexMatches=block.match(/<([0-9A-Fa-f]{2,500})>/g)||[];
+        for(const hm of hexMatches){
+          const hex=hm.slice(1,-1);
+          let str="";
+          for(let j=0;j<hex.length;j+=2){
+            const code=parseInt(hex.substr(j,2),16);
+            if(code>=32&&code<=126)str+=String.fromCharCode(code);
+          }
+          if(str.length>1)texts.push(str);
+        }
+        i=etIdx+2;
+      }
+      return texts.join(" ").replace(/\s+/g," ").trim();
+    }catch{return "";}
+  }
 
   const runBatch=async()=>{
     setBatchRunning(true);setBatchDone(0);const results=[];
